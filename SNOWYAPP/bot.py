@@ -114,15 +114,21 @@ def main_kb():
 
 @dp.pre_checkout_query()
 async def pre_checkout(q: PreCheckoutQuery):
-    await bot.answer_pre_checkout_query(q.id, ok=True)
+    try:
+        await q.answer(ok=True)
+    except Exception as e:
+        logger.error(f"Ошибка PreCheckout: {e}")
 
 @dp.message(F.successful_payment)
 async def success_pay(m: types.Message):
-    pay = m.successful_payment.invoice_payload
-    if pay.startswith("buy:"):
-        _, target, amt = pay.split(":")
-        nb = await db.add_bal(target, int(amt))
-        await m.answer(f"✅ Оплата прошла успешно!\nНачислено: +{amt} SNC.\nТекущий баланс: {nb} ❄️")
+    try:
+        pay = m.successful_payment.invoice_payload
+        if pay.startswith("buy:"):
+            _, target, amt = pay.split(":")
+            nb = await db.add_bal(target, int(amt))
+            await m.answer(f"✅ Оплата прошла успешно!\nНачислено: +{amt} SNC.\nТекущий баланс: {nb} ❄️")
+    except Exception as e:
+        logger.error(f"Ошибка обработки платежа: {e}")
 
 @dp.message(F.web_app_data)
 async def web_data(m: types.Message):
@@ -172,9 +178,9 @@ async def lifespan(app: FastAPI):
     await bot.set_my_commands([BotCommand(command="start", description="Главное меню")])
     await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Snowy App", web_app=WebAppInfo(url=WEBAPP_URL)))
     await bot.delete_webhook(drop_pending_updates=True)
-    task = asyncio.create_task(dp.start_polling(bot))
+    polling_task = asyncio.create_task(dp.start_polling(bot))
     yield
-    task.cancel()
+    polling_task.cancel()
     if db.pool: 
         await db.pool.close()
     await bot.session.close()
@@ -189,7 +195,7 @@ async def health():
 @app.get("/api/user/{u}", response_model=UserData)
 async def api_u(u: str):
     b = await db.get_bal(u.lower())
-    return {"username": u, "balance": b, "tasks": [{"id":1,"title":"Группа","reward":100,"done":False}]}
+    return {"username": u, "balance": b, "tasks": [{"id":1,"title":"Подписка на канал","reward":100,"done":False}]}
 
 @app.get("/api/leaderboard", response_model=List[LeaderRow])
 async def api_top():
@@ -197,15 +203,19 @@ async def api_top():
 
 @app.get("/api/buy_snc/{u}/{snc}/{stars}")
 async def api_pay(u: str, snc: int, stars: int):
-    url = await bot.create_invoice_link(
-        title=f"{snc} SNC", 
-        description="Покупка", 
-        payload=f"buy:{u.lower()}:{snc}", 
-        provider_token="", 
-        currency="XTR", 
-        prices=[LabeledPrice(label="SNC", amount=int(stars))]
-    )
-    return {"invoice_url": url}
+    try:
+        url = await bot.create_invoice_link(
+            title=f"{snc} SNC Units", 
+            description=f"Пополнение баланса на {snc} SNC", 
+            payload=f"buy:{u.lower()}:{snc}", 
+            provider_token="", 
+            currency="XTR", 
+            prices=[LabeledPrice(label="SNC", amount=int(stars))]
+        )
+        return {"invoice_url": url}
+    except Exception as e:
+        logger.error(f"Ошибка создания счета: {e}")
+        return {"error": "Gateway Error"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
