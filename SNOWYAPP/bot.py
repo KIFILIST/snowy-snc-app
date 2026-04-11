@@ -62,8 +62,8 @@ class DB:
             try:
                 self.pool = await asyncpg.create_pool(
                     self.url,
-                    min_size=5,
-                    max_size=20,
+                    min_size=2,
+                    max_size=10,
                     command_timeout=60
                 )
                 async with self.pool.acquire() as conn:
@@ -74,10 +74,10 @@ class DB:
                             updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                         )
                     """)
-                logger.info("DATABASE CONNECTED")
+                logger.info("База данных подключена")
                 return True
             except Exception as e:
-                logger.error(f"DB ATTEMPT {i} FAILED: {e}")
+                logger.error(f"Ошибка БД {i}: {e}")
                 await asyncio.sleep(5)
         return False
 
@@ -122,7 +122,7 @@ async def success_pay(m: types.Message):
     if pay.startswith("buy:"):
         _, target, amt = pay.split(":")
         nb = await db.add_bal(target, int(amt))
-        await m.answer(f"✅ Успешно! +{amt} SNC. Баланс: {nb} ❄️")
+        await m.answer(f"✅ Оплата прошла успешно!\nНачислено: +{amt} SNC.\nТекущий баланс: {nb} ❄️")
 
 @dp.message(F.web_app_data)
 async def web_data(m: types.Message):
@@ -132,17 +132,18 @@ async def web_data(m: types.Message):
             u = (m.from_user.username or f"id{m.from_user.id}").lower()
             t = str(data.get("target")).lower().replace("@", "").strip()
             v = int(data.get("amount"))
-            if v <= 0 or u == t: return
+            if v <= 0 or u == t: 
+                return
             if await db.get_bal(u) < v:
-                await m.answer("❌ Мало SNC.")
+                await m.answer("❌ Недостаточно SNC.")
                 return
             async with db.pool.acquire() as conn:
                 if not await conn.fetchval("SELECT 1 FROM users WHERE username = $1", t):
-                    await m.answer(f"❌ Игрок {t} не в базе.")
+                    await m.answer(f"❌ Пользователь @{t} не найден.")
                     return
                 await db.add_bal(u, -v)
                 await db.add_bal(t, v)
-                await m.answer(f"✅ Перевод {v} для {t} выполнен ❄️")
+                await m.answer(f"✅ Перевод {v} SNC пользователю @{t} выполнен ❄️")
     except Exception as e:
         logger.error(e)
 
@@ -150,31 +151,32 @@ async def web_data(m: types.Message):
 async def start(m: types.Message):
     u = (m.from_user.username or f"id{m.from_user.id}").lower()
     b = await db.get_bal(u)
-    await m.answer(f"❄️ Привет, {u}!\nБаланс: {b} SNC", reply_markup=main_kb())
+    await m.answer(f"❄️ Привет, {u}!\nТвой баланс: {b} SNC", reply_markup=main_kb())
 
 @dp.message(F.chat.type == "private")
 async def admin_msg(m: types.Message):
     u = (m.from_user.username or f"id{m.from_user.id}").lower()
-    if m.from_user.id in ADMIN_IDS:
-        match = re.match(r"^@(\w+)\s+([+-]?\d+)$", m.text or "")
+    if m.from_user.id in ADMIN_IDS and m.text:
+        match = re.match(r"^@(\w+)\s+([+-]?\d+)$", m.text.strip())
         if match:
             target, amt = match.group(1).lower(), int(match.group(2))
             res = await db.add_bal(target, amt)
-            await m.answer(f"⚙️ {target}: {res} SNC")
+            await m.answer(f"⚙️ Баланс @{target} изменен. Текущий баланс: {res} SNC")
             return
-    await m.answer(f"❄️ Баланс: {await db.get_bal(u)} SNC", reply_markup=main_kb())
+    await m.answer(f"❄️ Твой баланс: {await db.get_bal(u)} SNC\nОткрой приложение, чтобы продолжить!", reply_markup=main_kb())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not await db.connect():
-        logger.critical("DB FAILED")
-    await bot.set_my_commands([BotCommand(command="start", description="Меню")])
+        logger.critical("КРИТИЧЕСКАЯ ОШИБКА БД")
+    await bot.set_my_commands([BotCommand(command="start", description="Главное меню")])
     await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Snowy App", web_app=WebAppInfo(url=WEBAPP_URL)))
     await bot.delete_webhook(drop_pending_updates=True)
     task = asyncio.create_task(dp.start_polling(bot))
     yield
     task.cancel()
-    if db.pool: await db.pool.close()
+    if db.pool: 
+        await db.pool.close()
     await bot.session.close()
 
 app = FastAPI(lifespan=lifespan)
@@ -182,7 +184,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 @app.get("/")
 async def health():
-    return {"status": "ok", "db": db.pool is not None}
+    return {"status": "ok", "db_connected": db.pool is not None}
 
 @app.get("/api/user/{u}", response_model=UserData)
 async def api_u(u: str):
@@ -195,8 +197,15 @@ async def api_top():
 
 @app.get("/api/buy_snc/{u}/{snc}/{stars}")
 async def api_pay(u: str, snc: int, stars: int):
-    url = await bot.create_invoice_link(title=f"{snc} SNC", description="Buy", payload=f"buy:{u.lower()}:{snc}", provider_token="", currency="XTR", prices=[LabeledPrice(label="SNC", amount=int(stars))])
+    url = await bot.create_invoice_link(
+        title=f"{snc} SNC", 
+        description="Покупка", 
+        payload=f"buy:{u.lower()}:{snc}", 
+        provider_token="", 
+        currency="XTR", 
+        prices=[LabeledPrice(label="SNC", amount=int(stars))]
+    )
     return {"invoice_url": url}
 
 if __name__ == "__main__":
-    uvicorn.run("bot:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
