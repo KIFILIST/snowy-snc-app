@@ -23,7 +23,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:TipoParol@postgres.railway.internal:5432/railway")
 WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp.html"
 
 bot = Bot(token=BOT_TOKEN)
@@ -35,7 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -43,9 +43,9 @@ async def get_db():
     global db_pool
     if db_pool is None:
         db_pool = await asyncpg.create_pool(
-            DATABASE_URL, 
-            min_size=1, 
-            max_size=15, 
+            DATABASE_URL,
+            min_size=1,
+            max_size=20,
             command_timeout=60
         )
     return db_pool
@@ -111,13 +111,14 @@ async def api_get_user(username: str):
             "tasks": [
                 {"title": "Вступить в отряд", "reward": 500, "done": False},
                 {"title": "Пригласить бойца", "reward": 1000, "done": False},
-                {"title": "Разведка местности", "reward": 300, "done": False}
+                {"title": "Разведка местности", "reward": 300, "done": False},
+                {"title": "Проверка связи", "reward": 150, "done": True}
             ]
         }
         return user_data
     except Exception as e:
         print(f"API Error (User): {e}")
-        raise HTTPException(status_code=500, detail="Database error")
+        raise HTTPException(status_code=500, detail="Database connection error")
 
 @app.post("/api/buy_nft/{username}/{nft_id}/{price}")
 async def api_buy_nft(username: str, nft_id: str, price: int):
@@ -266,14 +267,14 @@ async def success_payment_handler(message: types.Message):
 async def start_services():
     await init_db()
     
+    await bot.delete_webhook(drop_pending_updates=True)
+    
     app_port = int(os.getenv("PORT", 8080))
     api_config = uvicorn.Config(app, host="0.0.0.0", port=app_port, log_level="info")
     api_server = uvicorn.Server(api_config)
     
-    await bot.delete_webhook(drop_pending_updates=True)
-    
     await asyncio.gather(
-        dp.start_polling(bot),
+        dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types()),
         api_server.serve()
     )
 
