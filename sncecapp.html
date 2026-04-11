@@ -367,37 +367,14 @@
         font-weight: 800;
     }
 
-    .nft-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 20px;
-    }
-
-    .nft-card {
-        background: rgba(0, 0, 0, 0.2);
+    .nft-empty {
+        padding: 30px 10px;
+        color: var(--text-muted);
+        font-size: 15px;
+        background: rgba(0,0,0,0.2);
         border-radius: 15px;
-        padding: 15px 10px;
-        text-align: center;
-        border: 1px solid rgba(255,255,255,0.05);
-        transition: transform 0.2s;
-    }
-
-    .nft-card:active {
-        transform: scale(0.95);
-        border-color: var(--accent);
-    }
-
-    .nft-icon {
-        font-size: 40px;
-        margin-bottom: 10px;
-        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-    }
-
-    .nft-title {
-        font-size: 12px;
-        font-weight: 700;
-        color: #e2e8f0;
+        border: 1px dashed rgba(255,255,255,0.1);
+        margin-bottom: 20px;
     }
 </style>
 </head>
@@ -442,12 +419,12 @@
         <div style="flex-grow: 1;"></div>
         <div class="panel-content">
             <div class="panel-title">💸 Перевод SNC</div>
-            <div class="panel-text">Отправьте монеты другому игроку по его ID.</div>
+            <div class="panel-text">Отправьте монеты другому игроку по его ID или username.</div>
             
             <input type="text" id="targetUser" class="input-field" placeholder="ID игрока">
             <input type="number" id="sendAmount" class="input-field" placeholder="Сумма (SNC)">
             
-            <button class="action-btn" id="sendBtn" onclick="simulateSend()">Отправить</button>
+            <button class="action-btn" id="sendBtn" onclick="sendTransfer()">Отправить</button>
             <button class="back-btn" onclick="closeScreen()">Назад</button>
         </div>
         <div style="flex-grow: 1;"></div>
@@ -457,25 +434,10 @@
         <div style="flex-grow: 1;"></div>
         <div class="panel-content">
             <div class="panel-title">🖼️ Мои NFT</div>
-            <div class="panel-text">Ваша личная коллекция.</div>
+            <div class="panel-text">Ваша личная коллекция уникальных карточек.</div>
             
-            <div class="nft-grid">
-                <div class="nft-card" onclick="haptic()">
-                    <div class="nft-icon">🧊</div>
-                    <div class="nft-title">Ice Block #01</div>
-                </div>
-                <div class="nft-card" onclick="haptic()">
-                    <div class="nft-icon">⛄</div>
-                    <div class="nft-title">Snowman #42</div>
-                </div>
-                <div class="nft-card" onclick="haptic()">
-                    <div class="nft-icon">🏔️</div>
-                    <div class="nft-title">Everest #07</div>
-                </div>
-                <div class="nft-card" onclick="haptic()">
-                    <div class="nft-icon">💎</div>
-                    <div class="nft-title">Frost Gem #99</div>
-                </div>
+            <div class="nft-empty">
+                У вас пока нет ни одной NFT карточки. Участвуйте в событиях, чтобы получить их!
             </div>
 
             <button class="back-btn" onclick="closeScreen()">Назад</button>
@@ -651,14 +613,14 @@
             }
         }
 
-        function simulateSend() {
+        function sendTransfer() {
             const btn = document.getElementById('sendBtn');
             const user = document.getElementById('targetUser').value;
             const amount = document.getElementById('sendAmount').value;
 
-            if(!user || !amount) {
+            if(!user || !amount || amount <= 0) {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                btn.innerText = 'Заполните поля!';
+                btn.innerText = 'Ошибка ввода!';
                 btn.style.background = '#ef4444';
                 setTimeout(() => {
                     btn.innerText = 'Отправить';
@@ -667,17 +629,17 @@
                 return;
             }
 
-            btn.innerText = 'Отправка...';
+            btn.innerText = 'Обработка...';
             
             setTimeout(() => {
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                btn.innerText = 'Успешно! ✓';
-                btn.style.background = '#10b981';
-                
-                setTimeout(() => {
-                    closeScreen();
-                }, 1500);
-            }, 800);
+                const transferData = {
+                    type: "transfer",
+                    target: user,
+                    amount: parseInt(amount)
+                };
+                tg.sendData(JSON.stringify(transferData));
+                tg.close();
+            }, 500);
         }
     </script>
 </body>
