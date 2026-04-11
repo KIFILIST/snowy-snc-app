@@ -84,6 +84,7 @@
             text-align: center;
             backdrop-filter: blur(20px);
             transition: 0.2s;
+            cursor: pointer;
         }
         .menu-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
         .menu-btn span { display: block; font-size: 32px; margin-bottom: 8px; }
@@ -231,6 +232,7 @@
             border-radius: 18px;
             color: var(--text-muted);
             transition: 0.3s;
+            cursor: pointer;
         }
         .nav-item.active { color: var(--primary); background: rgba(255,255,255,0.05); }
         .nav-icon { font-size: 20px; margin-bottom: 4px; }
@@ -328,19 +330,19 @@
     </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('home')">
+        <div class="nav-item active" id="nav-home" onclick="switchTab('home')">
             <span class="nav-icon">⚡</span>
             <span class="nav-label">Главная</span>
         </div>
-        <div class="nav-item" onclick="switchTab('tasks')">
+        <div class="nav-item" id="nav-tasks" onclick="switchTab('tasks')">
             <span class="nav-icon">🎯</span>
             <span class="nav-label">Цели</span>
         </div>
-        <div class="nav-item" onclick="switchTab('shop')">
+        <div class="nav-item" id="nav-shop" onclick="switchTab('shop')">
             <span class="nav-icon">⭐</span>
             <span class="nav-label">Биржа</span>
         </div>
-        <div class="nav-item" onclick="switchTab('leaderboard')">
+        <div class="nav-item" id="nav-leaderboard" onclick="switchTab('leaderboard')">
             <span class="nav-icon">👑</span>
             <span class="nav-label">Топ</span>
         </div>
@@ -353,9 +355,8 @@
         tg.headerColor = '#05070a';
         tg.backgroundColor = '#05070a';
 
-        const SERVER_URL = "https://snowy-snc-app-production.up.railway.app".replace(/\/$/, ""); 
-        let username = tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`;
-        username = username.toLowerCase();
+        const SERVER_URL = "https://snowy-snc-app-production.up.railway.app";
+        let username = (tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`).toLowerCase();
         let currentSNC = 0;
         let ownedNFTs = [];
 
@@ -366,20 +367,12 @@
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => {
-                const clickAttr = el.getAttribute('onclick');
-                if(clickAttr && clickAttr.includes(tabId)) {
-                    el.classList.add('active');
-                } else {
-                    el.classList.remove('active');
-                }
-            });
-            document.getElementById(`tab-${tabId}`).classList.add('active');
-            
-            if(tabId === 'leaderboard') loadLeaderboard();
-            if(tabId === 'tasks' || tabId === 'home') loadUserData();
-            if(tabId === 'nfts') renderInventory();
-            
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('active');
+            if (tabId === 'leaderboard') loadLeaderboard();
+            if (tabId === 'tasks' || tabId === 'home') loadUserData();
+            if (tabId === 'nfts') renderInventory();
             tg.HapticFeedback.impactOccurred('medium');
         }
 
@@ -389,14 +382,11 @@
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
-                
                 if (!response.ok) throw new Error("API Connection Failed");
-                
                 const data = await response.json();
                 currentSNC = data.balance;
                 ownedNFTs = data.inventory || [];
                 document.getElementById("user-balance").innerText = data.balance.toLocaleString();
-                
                 const tasksHtml = data.tasks.map(t => `
                     <div class="card task-row">
                         <div class="task-info">
@@ -412,6 +402,7 @@
             } catch (e) {
                 console.error("Balance error:", e);
                 document.getElementById("user-balance").innerText = "---";
+                document.getElementById("tasks-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Ошибка подключения к серверу</div>';
             }
         }
 
@@ -422,9 +413,7 @@
                     method: 'GET',
                     headers: { 'Accept': 'application/json' }
                 });
-                
                 if (!response.ok) throw new Error("Leaderboard Offline");
-
                 const data = await response.json();
                 const boardHtml = data.map((user, index) => {
                     let rankIcon = index < 3 ? ['🏆','🥈','🥉'][index] : '#' + (index + 1);
@@ -439,7 +428,7 @@
                 listEl.innerHTML = boardHtml || "Список пуст.";
             } catch (e) {
                 console.error("Leaderboard error:", e);
-                document.getElementById("leaderboard-list").innerHTML = "Ошибка сети";
+                document.getElementById("leaderboard-list").innerHTML = '<div style="text-align:center;color:var(--text-muted);">Ошибка подключения к серверу</div>';
             }
         }
 
@@ -452,7 +441,6 @@
                 tg.showAlert("Недостаточно средств на балансе.");
                 return;
             }
-
             tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (confirmed) => {
                 if (confirmed) {
                     tg.HapticFeedback.impactOccurred('heavy');
@@ -461,7 +449,6 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' }
                         });
-                        
                         if (response.ok) {
                             tg.showAlert(`${title} приобретен!`);
                             loadUserData();
@@ -482,7 +469,6 @@
                 grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Инвентарь пуст</div>';
                 return;
             }
-
             grid.innerHTML = ownedNFTs.map(nftId => {
                 const info = NFT_DATA[nftId] || { icon: '❄️', title: 'Артефакт' };
                 return `
@@ -499,7 +485,6 @@
         function sendTransfer() {
             const target = document.getElementById("target").value.trim().replace('@', '');
             const amount = parseInt(document.getElementById("amount").value);
-            
             if (!target || isNaN(amount) || amount <= 0) {
                 tg.showAlert("Введите корректный @username и сумму.");
                 return;
@@ -508,7 +493,6 @@
                 tg.showAlert("Недостаточно SNC для перевода.");
                 return;
             }
-            
             tg.HapticFeedback.notificationOccurred('warning');
             tg.sendData(JSON.stringify({ type: "transfer", target: target.toLowerCase(), amount: amount }));
             tg.close();
@@ -517,15 +501,12 @@
         async function buySNC(amountSnc, amountStars) {
             tg.HapticFeedback.impactOccurred('heavy');
             try {
-                const url = `${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`;
-                const response = await fetch(url, {
+                const response = await fetch(`${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`, {
                     method: 'GET',
                     mode: 'cors',
                     headers: { 'Accept': 'application/json' }
                 });
-                
                 if (!response.ok) throw new Error("Invoice Generation Failed");
-
                 const data = await response.json();
                 if (data.invoice_url) {
                     tg.openInvoice(data.invoice_url, function(status) {
