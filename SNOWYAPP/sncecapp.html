@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snowy SNC</title>
+    <title>Snowy SNC Elite</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -172,6 +172,7 @@
             align-items: center;
             gap: 6px;
         }
+        .shop-price.snc { color: var(--primary); background: rgba(0, 242, 255, 0.1); }
         .shop-btn { background: #fff; color: #000; padding: 16px; }
 
         .task-row {
@@ -205,6 +206,8 @@
             padding: 30px 10px;
             text-align: center;
             border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
         }
         .nft-icon { font-size: 44px; margin-bottom: 12px; display: block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
 
@@ -235,6 +238,19 @@
         .nav-item.active { color: var(--primary); background: rgba(255,255,255,0.05); }
         .nav-icon { font-size: 20px; margin-bottom: 4px; }
         .nav-label { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+
+        .owned-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--success);
+            color: black;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -246,7 +262,7 @@
     <div id="tab-home" class="container tab-content active">
         <div class="main-menu">
             <div class="menu-btn" onclick="switchTab('nfts')">
-                <span>💎</span> <p>Артефакты</p>
+                <span>💎</span> <p>Мои NFT</p>
             </div>
             <div class="menu-btn" onclick="switchTab('leaderboard')">
                 <span>🏆</span> <p>Рейтинг</p>
@@ -268,47 +284,32 @@
     </div>
 
     <div id="tab-shop" class="container tab-content">
-        <h2 class="section-title">Рынок SNC</h2>
+        <h2 class="section-title">Биржа Stars</h2>
         <div class="shop-grid">
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info">
-                        <h4>Набор Новичка</h4>
-                        <p>1,000 SNC ед.</p>
-                    </div>
-                    <div class="shop-price"><span>⭐</span> 50</div>
-                </div>
-                <button class="shop-btn" onclick="buySNC(1000, 50)">Приобрести</button>
-            </div>
-            <div class="shop-card">
-                <div class="shop-header">
-                    <div class="shop-info">
-                        <h4>Пакет Ветерана</h4>
-                        <p>5,000 SNC ед.</p>
-                    </div>
+                    <div class="shop-info"><h4>Пакет Ветерана</h4><p>5,000 SNC</p></div>
                     <div class="shop-price"><span>⭐</span> 200</div>
                 </div>
-                <button class="shop-btn" onclick="buySNC(5000, 200)">Приобрести</button>
+                <button class="shop-btn" onclick="buySNC(5000, 200)">Купить</button>
+            </div>
+        </div>
+
+        <h2 class="section-title">Рынок Артефактов (за SNC)</h2>
+        <div class="shop-grid" id="nft-market">
+            <div class="shop-card">
+                <div class="shop-header">
+                    <div class="shop-info"><h4>Ледяной Феникс</h4><p>Множитель престижа</p></div>
+                    <div class="shop-price snc">❄️ 25,000</div>
+                </div>
+                <button class="shop-btn" onclick="buyNFT('phoenix', 25000, '🔥', 'Ледяной Феникс')">Приобрести</button>
             </div>
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info">
-                        <h4>Элитный Резерв</h4>
-                        <p>15,000 SNC ед.</p>
-                    </div>
-                    <div class="shop-price"><span>⭐</span> 500</div>
+                    <div class="shop-info"><h4>Корона Смерти</h4><p>Эффект свечения</p></div>
+                    <div class="shop-price snc">❄️ 50,000</div>
                 </div>
-                <button class="shop-btn" onclick="buySNC(15000, 500)">Приобрести</button>
-            </div>
-            <div class="shop-card">
-                <div class="shop-header">
-                    <div class="shop-info">
-                        <h4>Снежный Магнат</h4>
-                        <p>50,000 SNC ед.</p>
-                    </div>
-                    <div class="shop-price"><span>⭐</span> 1500</div>
-                </div>
-                <button class="shop-btn" onclick="buySNC(50000, 1500)">Приобрести</button>
+                <button class="shop-btn" onclick="buyNFT('crown', 50000, '👑', 'Корона Смерти')">Приобрести</button>
             </div>
         </div>
     </div>
@@ -321,27 +322,10 @@
     </div>
 
     <div id="tab-nfts" class="container tab-content">
-        <h2 class="section-title">Артефакты</h2>
-        <div class="nft-grid">
-            <div class="nft-card">
-                <span class="nft-icon">❄️</span>
-                <p style="font-weight: 800; margin: 0; font-size: 14px;">Ледяное ядро</p>
-                <span style="font-size: 10px; color: var(--primary); font-weight: 800;">RARE</span>
-            </div>
-            <div class="nft-card">
-                <span class="nft-icon">🧊</span>
-                <p style="font-weight: 800; margin: 0; font-size: 14px;">Ледяная эгида</p>
-                <span style="font-size: 10px; color: var(--primary); font-weight: 800;">EPIC</span>
-            </div>
-            <div class="nft-card">
-                <span class="nft-icon">💎</span>
-                <p style="font-weight: 800; margin: 0; font-size: 14px;">Кристалл Власти</p>
-                <span style="font-size: 10px; color: var(--accent); font-weight: 800;">MYTHIC</span>
-            </div>
-            <div class="nft-card">
-                <span class="nft-icon">⚡</span>
-                <p style="font-weight: 800; margin: 0; font-size: 14px;">Грозовая Снежинка</p>
-                <span style="font-size: 10px; color: #fff; font-weight: 800;">LEGENDARY</span>
+        <h2 class="section-title">Артефакты в наличии</h2>
+        <div class="nft-grid" id="my-nfts-grid">
+            <div class="card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">
+                У вас пока нет приобретенных артефактов
             </div>
         </div>
     </div>
@@ -375,6 +359,7 @@
         const SERVER_URL = "https://snowy-snc-app-production.up.railway.app"; 
         let username = tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`;
         username = username.toLowerCase();
+        let currentSNC = 0;
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -390,6 +375,7 @@
             
             if(tabId === 'leaderboard') loadLeaderboard();
             if(tabId === 'tasks' || tabId === 'home') loadUserData();
+            if(tabId === 'nfts') renderInventory();
             
             tg.HapticFeedback.impactOccurred('medium');
         }
@@ -398,13 +384,11 @@
             try {
                 const response = await fetch(`${SERVER_URL}/api/user/${username}`, {
                     method: 'GET',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Accept': 'application/json' }
                 });
-                
                 if (!response.ok) throw new Error("API Offline");
-                
                 const data = await response.json();
+                currentSNC = data.balance;
                 document.getElementById("user-balance").innerText = data.balance.toLocaleString();
                 
                 const tasksHtml = data.tasks.map(t => `
@@ -420,7 +404,6 @@
                 `).join('');
                 document.getElementById("tasks-list").innerHTML = tasksHtml || "Нет доступных миссий.";
             } catch (e) {
-                console.error("Balance fetch error:", e);
                 document.getElementById("user-balance").innerText = "---";
             }
         }
@@ -430,17 +413,14 @@
                 const listEl = document.getElementById("leaderboard-list");
                 const response = await fetch(`${SERVER_URL}/api/leaderboard`, {
                     method: 'GET',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Accept': 'application/json' }
                 });
-                
                 const data = await response.json();
                 const boardHtml = data.map((user, index) => {
-                    let rankClass = index === 0 ? 'rank-1' : (index === 1 ? 'rank-2' : (index === 2 ? 'rank-3' : ''));
-                    let rankIcon = index < 3 ? '🏆' : '#' + (index + 1);
+                    let rankIcon = index < 3 ? ['🏆','🥈','🥉'][index] : '#' + (index + 1);
                     return `
                         <div class="leader-row">
-                            <div class="rank ${rankClass}">${rankIcon}</div>
+                            <div class="rank">${rankIcon}</div>
                             <div class="username">@${user.username}</div>
                             <div class="score">${user.balance.toLocaleString()}</div>
                         </div>
@@ -448,27 +428,76 @@
                 }).join('');
                 listEl.innerHTML = boardHtml || "Список пуст.";
             } catch (e) {
-                document.getElementById("leaderboard-list").innerHTML = "Ошибка связи с сервером";
+                document.getElementById("leaderboard-list").innerHTML = "Ошибка связи";
             }
+        }
+
+        async function buyNFT(id, price, icon, title) {
+            if (currentSNC < price) {
+                tg.showAlert("Недостаточно SNC для покупки этого артефакта!");
+                return;
+            }
+
+            tg.showConfirm(`Вы уверены, что хотите купить ${title} за ${price.toLocaleString()} SNC?`, async (confirmed) => {
+                if (confirmed) {
+                    tg.HapticFeedback.impactOccurred('heavy');
+                    try {
+                        const response = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        
+                        if (response.ok) {
+                            tg.showAlert(`${title} теперь в вашем инвентаре!`);
+                            saveLocalNFT(id, icon, title);
+                            loadUserData();
+                        } else {
+                            const err = await response.json();
+                            tg.showAlert("Ошибка: " + (err.detail || "Сервер отклонил покупку"));
+                        }
+                    } catch (e) {
+                        tg.showAlert("Ошибка соединения при покупке.");
+                    }
+                }
+            });
+        }
+
+        function saveLocalNFT(id, icon, title) {
+            let nfts = JSON.parse(localStorage.getItem(`snc_nfts_${username}`) || "[]");
+            if (!nfts.find(n => n.id === id)) {
+                nfts.push({id, icon, title});
+                localStorage.setItem(`snc_nfts_${username}`, JSON.stringify(nfts));
+            }
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById("my-nfts-grid");
+            const nfts = JSON.parse(localStorage.getItem(`snc_nfts_${username}`) || "[]");
+            
+            if (nfts.length === 0) {
+                grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Инвентарь пуст</div>';
+                return;
+            }
+
+            grid.innerHTML = nfts.map(n => `
+                <div class="nft-card">
+                    <div class="owned-badge">Owned</div>
+                    <span class="nft-icon">${n.icon}</span>
+                    <p style="font-weight:800;margin:0;font-size:14px;">${n.title}</p>
+                    <span style="font-size:10px;color:var(--primary);font-weight:800;">ELITE</span>
+                </div>
+            `).join('');
         }
 
         function sendTransfer() {
             const target = document.getElementById("target").value.trim().replace('@', '');
             const amount = document.getElementById("amount").value;
-            
             if (!target || !amount || amount <= 0) {
-                tg.showAlert("Введите корректное имя и сумму.");
+                tg.showAlert("Введите корректные данные.");
                 return;
             }
-            
             tg.HapticFeedback.notificationOccurred('warning');
-            const transferPayload = {
-                type: "transfer",
-                target: target.toLowerCase(),
-                amount: parseInt(amount)
-            };
-            
-            tg.sendData(JSON.stringify(transferPayload));
+            tg.sendData(JSON.stringify({ type: "transfer", target: target.toLowerCase(), amount: parseInt(amount) }));
             tg.close();
         }
 
@@ -479,28 +508,20 @@
                 const response = await fetch(url, {
                     method: 'GET',
                     mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
                 });
-                
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.detail || "Server Error");
-                }
-
+                if (!response.ok) throw new Error("Server Error");
                 const data = await response.json();
                 if (data.invoice_url) {
                     tg.openInvoice(data.invoice_url, function(status) {
                         if (status === 'paid') {
                             tg.HapticFeedback.notificationOccurred('success');
-                            tg.showAlert("Оплата принята! Баланс обновится через несколько секунд.");
-                            setTimeout(loadUserData, 3500);
-                        } else if (status === 'cancelled') {
-                            tg.HapticFeedback.notificationOccurred('error');
+                            tg.showAlert("Оплата принята!");
+                            setTimeout(loadUserData, 3000);
                         }
                     });
                 }
             } catch (e) {
-                console.error("Payment flow error:", e);
                 tg.showAlert("Ошибка платежа: " + e.message);
             }
         }

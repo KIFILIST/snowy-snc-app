@@ -24,7 +24,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 DATABASE_URL = os.getenv("DATABASE_URL")
-WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/sncapp.html"
+WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
