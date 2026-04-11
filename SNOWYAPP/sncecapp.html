@@ -17,6 +17,7 @@
             --text-main: #ffffff;
             --text-muted: #8e8e93;
             --success: #00ff88;
+            --error: #ff3b30;
         }
 
         body {
@@ -28,7 +29,7 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 120px;
+            padding-bottom: 140px;
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
@@ -41,288 +42,280 @@
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(25px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .header {
             text-align: center;
-            padding: 60px 20px 40px;
+            padding: 70px 20px 45px;
             position: relative;
+            z-index: 10;
         }
 
         .balance-title {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .balance-value {
-            font-size: 58px;
+            font-size: 62px;
             font-weight: 800;
             margin: 0;
-            background: linear-gradient(180deg, #fff 30%, var(--primary) 100%);
+            background: linear-gradient(180deg, #fff 40%, var(--primary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: pulseGlow 3s infinite;
-            letter-spacing: -2px;
+            animation: pulseGlow 4s infinite ease-in-out;
+            letter-spacing: -3px;
         }
 
-        .container { padding: 0 16px; }
+        .container { padding: 0 20px; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .tab-content.active { display: block; animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
 
-        .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px; }
+        .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 35px; }
         .menu-btn {
             background: var(--surface);
-            padding: 24px 16px;
-            border-radius: 24px;
+            padding: 28px 18px;
+            border-radius: 26px;
             border: 1px solid var(--border);
             text-align: center;
-            backdrop-filter: blur(20px);
-            transition: 0.2s;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            transition: all 0.3s;
         }
-        .menu-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
-        .menu-btn span { display: block; font-size: 32px; margin-bottom: 8px; }
-        .menu-btn p { margin: 0; font-weight: 700; font-size: 13px; color: var(--text-main); }
+        .menu-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+        .menu-btn span { display: block; font-size: 34px; margin-bottom: 10px; }
+        .menu-btn p { margin: 0; font-weight: 800; font-size: 14px; color: var(--text-main); letter-spacing: 0.5px; }
 
         .card {
             background: var(--surface);
-            padding: 24px;
-            border-radius: 28px;
-            margin-bottom: 16px;
+            padding: 26px;
+            border-radius: 30px;
+            margin-bottom: 20px;
             border: 1px solid var(--border);
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
         }
 
         input {
             width: 100%;
-            padding: 20px;
-            margin-bottom: 12px;
-            border-radius: 20px;
+            padding: 22px;
+            margin-bottom: 14px;
+            border-radius: 22px;
             border: 1px solid var(--border);
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
             color: white;
             box-sizing: border-box;
             font-size: 16px;
             font-family: inherit;
             outline: none;
-            transition: 0.3s;
+            transition: 0.4s;
         }
-        input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.5); }
+        input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.6); box-shadow: 0 0 15px rgba(0, 242, 255, 0.1); }
 
         button {
             width: 100%;
-            padding: 20px;
-            border-radius: 20px;
+            padding: 22px;
+            border-radius: 22px;
             border: none;
             background: linear-gradient(135deg, var(--secondary), var(--primary));
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 800;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        button:active { transform: scale(0.97); filter: brightness(1.2); }
+        button:active { transform: scale(0.96); filter: brightness(1.3); }
+        button.secondary { background: var(--surface); border: 1px solid var(--border); }
 
-        .section-title { font-size: 22px; font-weight: 800; margin: 0 0 20px 8px; letter-spacing: -0.5px; }
+        .section-title { font-size: 24px; font-weight: 800; margin: 0 0 22px 10px; letter-spacing: -0.8px; color: #fff; }
 
         .leader-row {
             display: flex;
             align-items: center;
-            padding: 16px;
-            border-radius: 20px;
-            margin-bottom: 10px;
-            background: rgba(255,255,255,0.03);
+            padding: 18px;
+            border-radius: 22px;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.04);
             border: 1px solid transparent;
             transition: 0.2s;
         }
-        .leader-row:active { background: rgba(255,255,255,0.08); }
-        .rank { font-weight: 800; width: 45px; font-size: 18px; color: var(--text-muted); }
-        .rank-1 { color: #ffcc00; font-size: 22px; }
-        .rank-2 { color: #c0c0c0; }
-        .rank-3 { color: #cd7f32; }
-        .username { flex-grow: 1; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
+        .rank { font-weight: 800; width: 50px; font-size: 19px; color: var(--text-muted); }
+        .rank-1 { color: #ffcc00; text-shadow: 0 0 10px rgba(255,204,0,0.4); }
+        .username { flex-grow: 1; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
         .score { font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
 
         .shop-card {
-            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 16px;
+            background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+            border-radius: 32px;
+            padding: 26px;
+            margin-bottom: 18px;
             border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 22px;
         }
         .shop-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .shop-info h4 { margin: 0; font-size: 20px; font-weight: 800; }
-        .shop-info p { margin: 4px 0 0; font-size: 14px; color: var(--text-muted); }
+        .shop-info h4 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+        .shop-info p { margin: 6px 0 0; font-size: 14px; color: var(--text-muted); line-height: 1.4; }
         .shop-price { 
-            background: rgba(255, 204, 0, 0.1);
+            background: rgba(255, 204, 0, 0.12);
             color: #ffcc00;
-            padding: 8px 14px;
-            border-radius: 12px;
+            padding: 10px 16px;
+            border-radius: 14px;
             font-weight: 800;
-            font-size: 14px;
+            font-size: 15px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
-        .shop-price.snc { color: var(--primary); background: rgba(0, 242, 255, 0.1); }
-        .shop-btn { background: #fff; color: #000; padding: 16px; }
+        .shop-price.snc { color: var(--primary); background: rgba(0, 242, 255, 0.12); }
+        .shop-btn { background: #fff; color: #000; padding: 18px; border-radius: 18px; }
 
-        .task-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-        }
-        .task-reward { 
-            color: var(--primary); 
-            font-weight: 800; 
-            font-size: 13px; 
-            margin-top: 6px;
-            background: rgba(0, 242, 255, 0.1);
-            padding: 4px 8px;
-            border-radius: 8px;
-            display: inline-block;
-        }
-        .status-badge { 
-            font-size: 12px; 
-            font-weight: 800; 
-            padding: 8px 16px; 
-            border-radius: 14px; 
-            background: rgba(255,255,255,0.05);
-        }
-
-        .nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .nft-card {
             background: var(--surface);
-            border-radius: 28px;
-            padding: 30px 10px;
+            border-radius: 30px;
+            padding: 35px 12px;
             text-align: center;
             border: 1px solid var(--border);
             position: relative;
             overflow: hidden;
+            transition: 0.3s;
         }
-        .nft-icon { font-size: 44px; margin-bottom: 12px; display: block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
+        .nft-card:active { transform: scale(0.95); }
+        .nft-icon { font-size: 48px; margin-bottom: 15px; display: block; filter: drop-shadow(0 12px 20px rgba(0,0,0,0.6)); }
 
         .bottom-nav {
             position: fixed;
-            bottom: 24px;
-            left: 16px;
-            right: 16px;
-            background: rgba(10, 12, 20, 0.8);
-            backdrop-filter: blur(30px);
-            border-radius: 24px;
+            bottom: 28px;
+            left: 20px;
+            right: 20px;
+            background: rgba(10, 12, 20, 0.85);
+            backdrop-filter: blur(35px);
+            -webkit-backdrop-filter: blur(35px);
+            border-radius: 28px;
             border: 1px solid var(--border);
             display: flex;
-            padding: 8px;
+            padding: 10px;
             z-index: 1000;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.7);
         }
         .nav-item {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 12px 0;
-            border-radius: 18px;
+            padding: 14px 0;
+            border-radius: 20px;
             color: var(--text-muted);
-            transition: 0.3s;
+            transition: all 0.3s;
         }
-        .nav-item.active { color: var(--primary); background: rgba(255,255,255,0.05); }
-        .nav-icon { font-size: 20px; margin-bottom: 4px; }
-        .nav-label { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .nav-item.active { color: var(--primary); background: rgba(255,255,255,0.07); }
+        .nav-icon { font-size: 22px; margin-bottom: 5px; }
+        .nav-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .owned-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 12px;
+            right: 12px;
             background: var(--success);
-            color: black;
-            font-size: 8px;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 6px;
+            color: #05070a;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 8px;
             text-transform: uppercase;
+            box-shadow: 0 0 10px rgba(0,255,136,0.3);
         }
+
+        .status-msg { text-align: center; color: var(--text-muted); font-size: 14px; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="balance-title">Капитал</div>
+        <div class="balance-title" id="status-label">Активы SNC</div>
         <div class="balance-value" id="user-balance">0</div>
     </div>
 
     <div id="tab-home" class="container tab-content active">
         <div class="main-menu">
             <div class="menu-btn" onclick="switchTab('nfts')">
-                <span>💎</span> <p>Мои NFT</p>
+                <span>📦</span> <p>Мои NFT</p>
             </div>
             <div class="menu-btn" onclick="switchTab('leaderboard')">
                 <span>🏆</span> <p>Рейтинг</p>
             </div>
         </div>
-        <h2 class="section-title">Транзакции</h2>
+        <h2 class="section-title">Перевод средств</h2>
         <div class="card">
             <input type="text" id="target" placeholder="@username получателя" spellcheck="false" autocomplete="off">
-            <input type="number" id="amount" placeholder="Количество SNC">
-            <button onclick="sendTransfer()">Отправить средства</button>
+            <input type="number" id="amount" placeholder="Сумма перевода">
+            <button onclick="sendTransfer()">Подтвердить транзакцию</button>
         </div>
     </div>
 
     <div id="tab-tasks" class="container tab-content">
-        <h2 class="section-title">Задания штаба</h2>
+        <h2 class="section-title">Оперативные задачи</h2>
         <div id="tasks-list">
-            <div class="card" style="text-align: center; color: var(--text-muted);">Инициализация...</div>
+            <div class="card" style="text-align: center; color: var(--text-muted);">Загрузка полетных данных...</div>
         </div>
     </div>
 
     <div id="tab-shop" class="container tab-content">
-        <h2 class="section-title">Биржа Stars</h2>
+        <h2 class="section-title">Пополнение (Stars)</h2>
         <div class="shop-grid">
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info"><h4>Пакет Ветерана</h4><p>5,000 SNC</p></div>
+                    <div class="shop-info"><h4>Запас Ветерана</h4><p>+5,000 SNC</p></div>
                     <div class="shop-price"><span>⭐</span> 200</div>
                 </div>
-                <button class="shop-btn" onclick="buySNC(5000, 200)">Купить</button>
+                <button class="shop-btn" onclick="buySNC(5000, 200)">Оформить</button>
             </div>
         </div>
 
-        <h2 class="section-title">Рынок Артефактов (за SNC)</h2>
+        <h2 class="section-title">Черный рынок (SNC)</h2>
         <div class="shop-grid" id="nft-market">
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info"><h4>Ледяной Феникс</h4><p>Множитель престижа</p></div>
+                    <div class="shop-info"><h4>Ледяной Феникс</h4><p>Редкий артефакт. Добавляет +15% к статусу.</p></div>
                     <div class="shop-price snc">❄️ 25,000</div>
                 </div>
-                <button class="shop-btn" onclick="buyNFT('phoenix', 25000, '🔥', 'Ледяной Феникс')">Приобрести</button>
+                <button class="shop-btn" onclick="handleNFT('phoenix', 25000, '🔥', 'Ледяной Феникс')">Купить</button>
             </div>
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info"><h4>Корона Смерти</h4><p>Эффект свечения</p></div>
+                    <div class="shop-info"><h4>Корона Смерти</h4><p>Легендарный венец. Уникальная аура в чате.</p></div>
                     <div class="shop-price snc">❄️ 50,000</div>
                 </div>
-                <button class="shop-btn" onclick="buyNFT('crown', 50000, '👑', 'Корона Смерти')">Приобрести</button>
+                <button class="shop-btn" onclick="handleNFT('crown', 50000, '👑', 'Корона Смерти')">Купить</button>
+            </div>
+            <div class="shop-card">
+                <div class="shop-header">
+                    <div class="shop-info"><h4>Эгида Пустоты</h4><p>Мифический щит. Защита капитала от санкций.</p></div>
+                    <div class="shop-price snc">❄️ 100,000</div>
+                </div>
+                <button class="shop-btn" onclick="handleNFT('aegis', 100000, '🛡️', 'Эгида Пустоты')">Купить</button>
             </div>
         </div>
     </div>
 
     <div id="tab-leaderboard" class="container tab-content">
-        <h2 class="section-title">Мировая Элита</h2>
+        <h2 class="section-title">Топ 10 Элиты</h2>
         <div class="card" id="leaderboard-list">
-            <div style="text-align: center; color: var(--text-muted);">Синхронизация данных...</div>
+            <div class="status-msg">Синхронизация с сервером...</div>
         </div>
     </div>
 
     <div id="tab-nfts" class="container tab-content">
-        <h2 class="section-title">Артефакты в наличии</h2>
+        <h2 class="section-title">Ваш Инвентарь</h2>
         <div class="nft-grid" id="my-nfts-grid">
             <div class="card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">
                 У вас пока нет приобретенных артефактов
@@ -332,20 +325,16 @@
 
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchTab('home')">
-            <span class="nav-icon">⚡</span>
-            <span class="nav-label">Главная</span>
+            <span class="nav-icon">⚡</span><span class="nav-label">Штаб</span>
         </div>
         <div class="nav-item" onclick="switchTab('tasks')">
-            <span class="nav-icon">🎯</span>
-            <span class="nav-label">Цели</span>
+            <span class="nav-icon">🎯</span><span class="nav-label">Цели</span>
         </div>
         <div class="nav-item" onclick="switchTab('shop')">
-            <span class="nav-icon">⭐</span>
-            <span class="nav-label">Биржа</span>
+            <span class="nav-icon">⭐</span><span class="nav-label">Рынок</span>
         </div>
         <div class="nav-item" onclick="switchTab('leaderboard')">
-            <span class="nav-icon">👑</span>
-            <span class="nav-label">Топ</span>
+            <span class="nav-icon">👑</span><span class="nav-label">Топ</span>
         </div>
     </nav>
 
@@ -359,7 +348,15 @@
         const SERVER_URL = "https://snowy-snc-app-production.up.railway.app"; 
         let username = tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`;
         username = username.toLowerCase();
+        
         let currentSNC = 0;
+        let ownedNFTs = [];
+
+        const NFT_DATA = {
+            'phoenix': { icon: '🔥', title: 'Ледяной Феникс' },
+            'crown': { icon: '👑', title: 'Корона Смерти' },
+            'aegis': { icon: '🛡️', title: 'Эгида Пустоты' }
+        };
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -384,17 +381,22 @@
             try {
                 const response = await fetch(`${SERVER_URL}/api/user/${username}`, {
                     method: 'GET',
+                    mode: 'cors',
                     headers: { 'Accept': 'application/json' }
                 });
+                
                 if (!response.ok) throw new Error("API Offline");
+                
                 const data = await response.json();
                 currentSNC = data.balance;
+                ownedNFTs = data.inventory || [];
+                
                 document.getElementById("user-balance").innerText = data.balance.toLocaleString();
                 
                 const tasksHtml = data.tasks.map(t => `
                     <div class="card task-row">
                         <div class="task-info">
-                            <h4 style="margin:0; font-size:15px;">${t.title}</h4>
+                            <h4 style="margin:0; font-size:16px;">${t.title}</h4>
                             <div class="task-reward">+${t.reward} SNC</div>
                         </div>
                         <div class="status-badge" style="${t.done ? 'color:var(--success); background:rgba(0,255,136,0.1);' : ''}">
@@ -402,8 +404,9 @@
                         </div>
                     </div>
                 `).join('');
-                document.getElementById("tasks-list").innerHTML = tasksHtml || "Нет доступных миссий.";
+                document.getElementById("tasks-list").innerHTML = tasksHtml;
             } catch (e) {
+                console.error("Fetch error:", e);
                 document.getElementById("user-balance").innerText = "---";
             }
         }
@@ -413,91 +416,98 @@
                 const listEl = document.getElementById("leaderboard-list");
                 const response = await fetch(`${SERVER_URL}/api/leaderboard`, {
                     method: 'GET',
-                    headers: { 'Accept': 'application/json' }
+                    mode: 'cors'
                 });
                 const data = await response.json();
                 const boardHtml = data.map((user, index) => {
-                    let rankIcon = index < 3 ? ['🏆','🥈','🥉'][index] : '#' + (index + 1);
+                    let rankIcon = index === 0 ? '🏆' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : '#' + (index + 1)));
+                    let isMe = user.username === username ? 'border: 1px solid var(--primary);' : '';
                     return `
-                        <div class="leader-row">
-                            <div class="rank">${rankIcon}</div>
+                        <div class="leader-row" style="${isMe}">
+                            <div class="rank ${index === 0 ? 'rank-1' : ''}">${rankIcon}</div>
                             <div class="username">@${user.username}</div>
                             <div class="score">${user.balance.toLocaleString()}</div>
                         </div>
                     `;
                 }).join('');
-                listEl.innerHTML = boardHtml || "Список пуст.";
+                listEl.innerHTML = boardHtml || "Нет данных.";
             } catch (e) {
-                document.getElementById("leaderboard-list").innerHTML = "Ошибка связи";
+                document.getElementById("leaderboard-list").innerHTML = "Ошибка сети.";
             }
         }
 
-        async function buyNFT(id, price, icon, title) {
+        async function handleNFT(id, price, icon, title) {
+            if (ownedNFTs.includes(id)) {
+                tg.showAlert("Этот артефакт уже находится в вашем инвентаре.");
+                return;
+            }
             if (currentSNC < price) {
-                tg.showAlert("Недостаточно SNC для покупки этого артефакта!");
+                tg.showAlert(`Недостаточно SNC. Требуется: ${price.toLocaleString()}`);
                 return;
             }
 
-            tg.showConfirm(`Вы уверены, что хотите купить ${title} за ${price.toLocaleString()} SNC?`, async (confirmed) => {
-                if (confirmed) {
+            tg.showConfirm(`Подтвердить покупку ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
+                if (ok) {
                     tg.HapticFeedback.impactOccurred('heavy');
                     try {
-                        const response = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}`, {
+                        const response = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }
+                            mode: 'cors'
                         });
                         
                         if (response.ok) {
-                            tg.showAlert(`${title} теперь в вашем инвентаре!`);
-                            saveLocalNFT(id, icon, title);
+                            tg.showAlert(`${title} успешно добавлен в арсенал!`);
                             loadUserData();
                         } else {
                             const err = await response.json();
-                            tg.showAlert("Ошибка: " + (err.detail || "Сервер отклонил покупку"));
+                            tg.showAlert("Отказ: " + err.detail);
                         }
                     } catch (e) {
-                        tg.showAlert("Ошибка соединения при покупке.");
+                        tg.showAlert("Ошибка соединения с сервером.");
                     }
                 }
             });
         }
 
-        function saveLocalNFT(id, icon, title) {
-            let nfts = JSON.parse(localStorage.getItem(`snc_nfts_${username}`) || "[]");
-            if (!nfts.find(n => n.id === id)) {
-                nfts.push({id, icon, title});
-                localStorage.setItem(`snc_nfts_${username}`, JSON.stringify(nfts));
-            }
-        }
-
         function renderInventory() {
             const grid = document.getElementById("my-nfts-grid");
-            const nfts = JSON.parse(localStorage.getItem(`snc_nfts_${username}`) || "[]");
-            
-            if (nfts.length === 0) {
+            if (ownedNFTs.length === 0) {
                 grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Инвентарь пуст</div>';
                 return;
             }
 
-            grid.innerHTML = nfts.map(n => `
-                <div class="nft-card">
-                    <div class="owned-badge">Owned</div>
-                    <span class="nft-icon">${n.icon}</span>
-                    <p style="font-weight:800;margin:0;font-size:14px;">${n.title}</p>
-                    <span style="font-size:10px;color:var(--primary);font-weight:800;">ELITE</span>
-                </div>
-            `).join('');
+            grid.innerHTML = ownedNFTs.map(nftId => {
+                const info = NFT_DATA[nftId] || { icon: '❓', title: 'Неизвестно' };
+                return `
+                    <div class="nft-card">
+                        <div class="owned-badge">Owned</div>
+                        <span class="nft-icon">${info.icon}</span>
+                        <p style="font-weight:800;margin:0;font-size:14px;">${info.title}</p>
+                        <span style="font-size:10px;color:var(--primary);font-weight:800;letter-spacing:1px;">SNOWY ELITE</span>
+                    </div>
+                `;
+            }).join('');
         }
 
         function sendTransfer() {
             const target = document.getElementById("target").value.trim().replace('@', '');
-            const amount = document.getElementById("amount").value;
-            if (!target || !amount || amount <= 0) {
-                tg.showAlert("Введите корректные данные.");
+            const amount = parseInt(document.getElementById("amount").value);
+            
+            if (!target || isNaN(amount) || amount <= 0) {
+                tg.showAlert("Укажите правильный @username и положительную сумму.");
                 return;
             }
+            if (amount > currentSNC) {
+                tg.showAlert("Недостаточно средств для перевода.");
+                return;
+            }
+            
             tg.HapticFeedback.notificationOccurred('warning');
-            tg.sendData(JSON.stringify({ type: "transfer", target: target.toLowerCase(), amount: parseInt(amount) }));
+            tg.sendData(JSON.stringify({ 
+                type: "transfer", 
+                target: target.toLowerCase(), 
+                amount: amount 
+            }));
             tg.close();
         }
 
@@ -508,26 +518,28 @@
                 const response = await fetch(url, {
                     method: 'GET',
                     mode: 'cors',
-                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                    headers: { 'Accept': 'application/json' }
                 });
-                if (!response.ok) throw new Error("Server Error");
+                
+                if (!response.ok) throw new Error("HTTP 500: Server Error");
+
                 const data = await response.json();
                 if (data.invoice_url) {
                     tg.openInvoice(data.invoice_url, function(status) {
                         if (status === 'paid') {
                             tg.HapticFeedback.notificationOccurred('success');
-                            tg.showAlert("Оплата принята!");
+                            tg.showAlert("Контракт исполнен! SNC зачислятся в ближайшее время.");
                             setTimeout(loadUserData, 3000);
                         }
                     });
                 }
             } catch (e) {
-                tg.showAlert("Ошибка платежа: " + e.message);
+                tg.showAlert("Ошибка шлюза: проверьте интернет или статус сервера.");
             }
         }
 
         loadUserData();
-        setInterval(loadUserData, 15000);
+        setInterval(loadUserData, 20000);
     </script>
 </body>
 </html>

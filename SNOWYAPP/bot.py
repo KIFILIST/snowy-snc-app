@@ -24,7 +24,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 DATABASE_URL = os.getenv("DATABASE_URL")
-WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp"
+WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp.html"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -42,7 +42,12 @@ app.add_middleware(
 async def get_db():
     global db_pool
     if db_pool is None:
-        db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=10)
+        db_pool = await asyncpg.create_pool(
+            DATABASE_URL, 
+            min_size=1, 
+            max_size=15, 
+            command_timeout=60
+        )
     return db_pool
 
 async def init_db():
@@ -52,7 +57,13 @@ async def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 username TEXT PRIMARY KEY, 
                 balance INTEGER DEFAULT 0
-            )
+            );
+            CREATE TABLE IF NOT EXISTS inventory (
+                id SERIAL PRIMARY KEY,
+                username TEXT REFERENCES users(username),
+                nft_id TEXT,
+                UNIQUE(username, nft_id)
+            );
         """)
 
 async def check_user(username: str):
@@ -69,7 +80,9 @@ async def update_balance(username: str, amount: int):
     async with pool.acquire() as conn:
         await conn.execute("UPDATE users SET balance = balance + $1 WHERE username = $2", amount, username.lower())
         row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username.lower())
-        return row['balance'] if row else 0
+        if row:
+            return row['balance']
+        return 0
 
 def get_username(user: types.User):
     if user.username:
@@ -86,9 +99,15 @@ def get_keyboard():
 async def api_get_user(username: str):
     try:
         balance = await check_user(username)
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            inv_rows = await conn.fetch("SELECT nft_id FROM inventory WHERE username = $1", username.lower())
+            inventory = [r['nft_id'] for r in inv_rows]
+        
         user_data = {
             "username": username,
             "balance": balance,
+            "inventory": inventory,
             "tasks": [
                 {"title": "Вступить в отряд", "reward": 500, "done": False},
                 {"title": "Пригласить бойца", "reward": 1000, "done": False},
@@ -99,6 +118,29 @@ async def api_get_user(username: str):
     except Exception as e:
         print(f"API Error (User): {e}")
         raise HTTPException(status_code=500, detail="Database error")
+
+@app.post("/api/buy_nft/{username}/{nft_id}/{price}")
+async def api_buy_nft(username: str, nft_id: str, price: int):
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            user_row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username.lower())
+            
+            if not user_row or user_row['balance'] < price:
+                raise HTTPException(status_code=400, detail="Insufficient SNC balance")
+            
+            async with conn.transaction():
+                await conn.execute("UPDATE users SET balance = balance - $1 WHERE username = $2", price, username.lower())
+                await conn.execute("""
+                    INSERT INTO inventory (username, nft_id) 
+                    VALUES ($1, $2) 
+                    ON CONFLICT (username, nft_id) DO NOTHING
+                """, username.lower(), nft_id)
+            
+            return {"status": "success", "nft_id": nft_id}
+    except Exception as e:
+        print(f"NFT Purchase Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/leaderboard")
 async def api_get_leaderboard():
@@ -125,7 +167,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
         )
         return {"invoice_url": invoice_link}
     except Exception as e:
-        print(f"PAYMENT ERROR: {e}")
+        print(f"PAYMENT API Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @dp.message(Command("start"))
@@ -155,8 +197,15 @@ async def cmd_mysnc(message: types.Message):
 @dp.message(Command("mynfts"))
 async def cmd_mynfts(message: types.Message):
     username = get_username(message.from_user)
-    await check_user(username)
-    await message.answer(f"🖼️ Склад артефактов *{username}* пуст.", parse_mode="Markdown")
+    pool = await get_db()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT nft_id FROM inventory WHERE username = $1", username.lower())
+    
+    if rows:
+        nfts = ", ".join([r['nft_id'] for r in rows])
+        await message.answer(f"🖼️ Артефакты *{username}*:\n{nfts}", parse_mode="Markdown")
+    else:
+        await message.answer(f"🖼️ Склад артефактов *{username}* пуст.", parse_mode="Markdown")
 
 @dp.message(Command("addsnc"))
 async def cmd_addsnc(message: types.Message):
