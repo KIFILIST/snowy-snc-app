@@ -24,7 +24,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
 DATABASE_URL = os.getenv("DATABASE_URL")
-WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp"
+WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/sncapp.html"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -34,8 +34,8 @@ db_pool = None
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -116,7 +116,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
     try:
         prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=int(amount_stars))]
         invoice_link = await bot.create_invoice_link(
-            title="Пополнение Snowy Coins",
+            title="Пополнение SNC",
             description=f"Приобретение {amount_snc} SNC для аккаунта {username}",
             payload=json.dumps({"user": username, "amount": amount_snc}),
             provider_token="",
@@ -125,7 +125,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
         )
         return {"invoice_url": invoice_link}
     except Exception as e:
-        print(f"API Error (Invoice): {e}")
+        print(f"PAYMENT ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @dp.message(Command("start"))
@@ -135,7 +135,7 @@ async def cmd_start(message: types.Message):
     
     if message.from_user.id in ADMIN_IDS:
         msg = (
-            "👑 *SNC ADMINISTRATION*\n\n"
+            "👑 *SNC ELITE ADMINISTRATION*\n\n"
             "Ваш статус подтвержден.\n"
             "Управление балансом:\n"
             "• ЛС: `@username +100` или `@username -50`\n"
