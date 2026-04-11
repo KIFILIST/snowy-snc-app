@@ -61,115 +61,97 @@ async def successful_payment_handler(message: types.Message):
     if payload.startswith("buy_snc:"):
         _, target_user, snc_amount = payload.split(":")
         new_balance = await update_balance(target_user, int(snc_amount))
-        text = f"🎉 *Оплата прошла успешно!*\n\nТебе начислено *{snc_amount} SNC*.\nТвой новый баланс: *{new_balance} SNC*."
-        await message.answer(text, parse_mode="Markdown")
+        await message.answer(f"🎉 *Оплата прошла успешно!*\n\nЗачислено: *{snc_amount} SNC*\nБаланс: *{new_balance} SNC*", parse_mode="Markdown")
 
 @dp.message(F.web_app_data)
 async def web_app_handler(message: types.Message):
     try:
         data = json.loads(message.web_app_data.data)
-    except Exception:
+    except:
         return
 
     if data.get("type") == "transfer":
         sender = get_username(message.from_user)
         target = str(data.get("target")).lower().replace("@", "")
-        
-        try:
-            amount = int(data.get("amount"))
-        except ValueError:
-            await message.answer("❌ Неверный формат суммы.")
-            return
+        amount = int(data.get("amount"))
 
-        if amount <= 0 or sender == target:
-            return
+        if amount <= 0 or sender == target: return
 
-        sender_balance = await check_user(sender)
-        if sender_balance < amount:
-            await message.answer("❌ Недостаточно SNC на балансе.")
+        s_bal = await check_user(sender)
+        if s_bal < amount:
+            await message.answer("❌ Недостаточно SNC.")
             return
 
         async with db_pool.acquire() as conn:
-            target_row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", target)
+            t_row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", target)
 
-        if target_row is None:
-            await message.answer(f"❌ Пользователь *{target}* не найден.", parse_mode="Markdown")
+        if t_row is None:
+            await message.answer(f"❌ Игрок *{target}* не найден.", parse_mode="Markdown")
             return
 
         await update_balance(sender, -amount)
         await update_balance(target, amount)
-        await message.answer(f"✅ Успешный перевод!\nОтправлено *{amount}* SNC игроку *{target}*.", parse_mode="Markdown")
+        await message.answer(f"✅ Переведено *{amount} SNC* игроку *{target}*.", parse_mode="Markdown")
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     username = get_username(message.from_user)
     balance = await check_user(username)
+    text = f"👋 Привет, *{username}*!\nТвой баланс: *{balance}* SNC ❄️"
     if message.from_user.id in ADMIN_IDS:
-        text = "👑 *SNC Admin*\n\nЛС: `@username +100` / `@username -50`\nГруппы: `/addsnc @username 100`"
-    else:
-        text = f"👋 Привет, *{username}*!\n\nТвой баланс: *{balance}* SNC ❄️"
+        text += "\n\n👑 Вы админ. Используйте `@username +100` для начисления."
     await message.answer(text, parse_mode="Markdown", reply_markup=get_keyboard())
 
 @dp.message(F.chat.type == "private")
 async def handle_private(message: types.Message):
     username = get_username(message.from_user)
     await check_user(username)
+    
     if message.from_user.id in ADMIN_IDS:
         match = re.match(r"^@(\w+)\s+([+-]?\d+)$", message.text or "")
         if match:
-            target = match.group(1).lower()
-            amt = int(match.group(2))
+            target, amt = match.group(1).lower(), int(match.group(2))
             async with db_pool.acquire() as conn:
                 row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", target)
-            if row is not None:
-                new_balance = await update_balance(target, amt)
-                await message.answer(f"✅ У пользователя *{target}* *{new_balance}* SNC", parse_mode="Markdown")
+            if row:
+                nb = await update_balance(target, amt)
+                await message.answer(f"✅ *{target}*: {nb} SNC")
             else:
-                await message.answer(f"❌ Пользователь *@{target}* не найден.", parse_mode="Markdown")
+                await message.answer("❌ Не найден.")
             return
+
     balance = await check_user(username)
-    await message.answer(f"❄️ У пользователя *{username}* *{balance}* SNC", parse_mode="Markdown", reply_markup=get_keyboard())
+    await message.answer(f"❄️ Твой баланс: *{balance}* SNC", parse_mode="Markdown", reply_markup=get_keyboard())
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
     await bot.delete_webhook(drop_pending_updates=True)
-    polling_task = asyncio.create_task(dp.start_polling(bot))
+    task = asyncio.create_task(dp.start_polling(bot))
     yield
-    polling_task.cancel()
-    if db_pool:
-        await db_pool.close()
+    task.cancel()
+    if db_pool: await db_pool.close()
     await bot.session.close()
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 @app.get("/api/user/{username}")
-async def api_get_user(username: str):
+async def api_user(username: str):
     async with db_pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username)
-        balance = row['balance'] if row else 0
-        return {"username": username, "balance": balance, "tasks": [{"id": 1, "title": "Подписаться на канал", "reward": 50, "done": False}]}
+        r = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username)
+        return {"username": username, "balance": r['balance'] if r else 0, "tasks": [{"id": 1, "title": "Вступить в группу", "reward": 100, "done": False}]}
 
 @app.get("/api/leaderboard")
-async def api_get_leaderboard():
+async def api_top():
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT 50")
-        return [{"username": row['username'], "balance": row['balance']} for row in rows]
+        rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT 10")
+        return [{"username": r['username'], "balance": r['balance']} for r in rows]
 
-@app.get("/api/buy_snc/{username}/{amount_snc}/{amount_stars}")
-async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
-    prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=amount_stars)]
-    invoice_url = await bot.create_invoice_link(
-        title=f"Покупка {amount_snc} SNC",
-        description=f"Пополнение баланса на {amount_snc} монет ❄️",
-        payload=f"buy_snc:{username}:{amount_snc}",
-        provider_token="",
-        currency="XTR",
-        prices=prices
-    )
-    return {"invoice_url": invoice_url}
+@app.get("/api/buy_snc/{username}/{snc}/{stars}")
+async def api_pay(username: str, snc: int, stars: int):
+    link = await bot.create_invoice_link(title=f"{snc} SNC", description="Пополнение", payload=f"buy_snc:{username}:{snc}", provider_token="", currency="XTR", prices=[LabeledPrice(label="SNC", amount=stars)])
+    return {"invoice_url": link}
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("bot:app", host="0.0.0.0", port=port)
+    uvicorn.run("bot:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
