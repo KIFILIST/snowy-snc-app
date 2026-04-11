@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, LabeledPrice, PreCheckoutQuery
 
 load_dotenv()
 
@@ -50,6 +50,19 @@ def get_keyboard():
 
 def get_username(user: types.User):
     return user.username.lower() if user.username else f"user_{user.id}"
+
+@dp.pre_checkout_query()
+async def pre_checkout_handler(pre_checkout_q: PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
+
+@dp.message(F.successful_payment)
+async def successful_payment_handler(message: types.Message):
+    payload = message.successful_payment.invoice_payload
+    if payload.startswith("buy_snc:"):
+        _, target_user, snc_amount = payload.split(":")
+        new_balance = await update_balance(target_user, int(snc_amount))
+        text = f"🎉 *Оплата прошла успешно!*\n\nТебе начислено *{snc_amount} SNC*.\nТвой новый баланс: *{new_balance} SNC*."
+        await message.answer(text, parse_mode="Markdown")
 
 @dp.message(F.web_app_data)
 async def web_app_handler(message: types.Message):
@@ -97,24 +110,6 @@ async def cmd_start(message: types.Message):
         text = f"👋 Привет, *{username}*!\n\nТвой баланс: *{balance}* SNC ❄️"
     await message.answer(text, parse_mode="Markdown", reply_markup=get_keyboard())
 
-@dp.message(Command("mysnc"))
-async def cmd_mysnc(message: types.Message):
-    username = get_username(message.from_user)
-    balance = await check_user(username)
-    markup = get_keyboard() if message.chat.type == "private" else None
-    await message.answer(f"❄️ У пользователя *{username}* *{balance}* SNC", parse_mode="Markdown", reply_markup=markup)
-
-@dp.message(Command("addsnc"))
-async def cmd_addsnc(message: types.Message):
-    if message.chat.type != "private" and message.from_user.id in ADMIN_IDS:
-        match = re.match(r"^/addsnc\s+@(\w+)\s+([+-]?\d+)$", message.text or "")
-        if match:
-            target = match.group(1).lower()
-            amt = int(match.group(2))
-            await check_user(target)
-            new_balance = await update_balance(target, amt)
-            await message.answer(f"✅ У пользователя *{target}* *{new_balance}* SNC", parse_mode="Markdown")
-
 @dp.message(F.chat.type == "private")
 async def handle_private(message: types.Message):
     username = get_username(message.from_user)
@@ -147,34 +142,33 @@ async def lifespan(app: FastAPI):
     await bot.session.close()
 
 app = FastAPI(lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.get("/api/user/{username}")
 async def api_get_user(username: str):
     async with db_pool.acquire() as conn:
         row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username)
         balance = row['balance'] if row else 0
-        return {
-            "username": username,
-            "balance": balance,
-            "tasks": [
-                {"id": 1, "title": "Подписаться на Telegram канал", "reward": 50, "done": False},
-                {"id": 2, "title": "Пригласить 3 друзей", "reward": 150, "done": False}
-            ]
-        }
+        return {"username": username, "balance": balance, "tasks": [{"id": 1, "title": "Подписаться на канал", "reward": 50, "done": False}]}
 
 @app.get("/api/leaderboard")
 async def api_get_leaderboard():
     async with db_pool.acquire() as conn:
-        rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC")
+        rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT 50")
         return [{"username": row['username'], "balance": row['balance']} for row in rows]
+
+@app.get("/api/buy_snc/{username}/{amount_snc}/{amount_stars}")
+async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
+    prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=amount_stars)]
+    invoice_url = await bot.create_invoice_link(
+        title=f"Покупка {amount_snc} SNC",
+        description=f"Пополнение баланса на {amount_snc} монет ❄️",
+        payload=f"buy_snc:{username}:{amount_snc}",
+        provider_token="",
+        currency="XTR",
+        prices=prices
+    )
+    return {"invoice_url": invoice_url}
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
