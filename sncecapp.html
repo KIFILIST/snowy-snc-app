@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snowy SNC App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--tg-theme-bg-color, #1e1e1e); color: var(--tg-theme-text-color, #ffffff); margin: 0; padding: 0; padding-bottom: 70px; }
+        .header { text-align: center; padding: 30px 20px; background: linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%); }
+        .balance-title { font-size: 16px; color: #888; }
+        .balance-value { font-size: 40px; font-weight: bold; margin: 10px 0; color: #00a8ff; }
+        .container { padding: 20px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #333; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border-radius: 10px; border: none; background: #00a8ff; color: white; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .card { background: #2a2a2a; padding: 15px; border-radius: 12px; margin-bottom: 10px; }
+        .leader-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #333; }
+        .leader-row:last-child { border-bottom: none; }
+        .rank { font-weight: bold; width: 30px; color: #888; }
+        .username { flex-grow: 1; }
+        .score { font-weight: bold; color: #00a8ff; }
+        .task-row { display: flex; justify-content: space-between; align-items: center; }
+        .task-info h4 { margin: 0 0 5px 0; }
+        .task-reward { color: #00a8ff; font-size: 14px; font-weight: bold; }
+        .task-status { background: #444; padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+        .shop-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .shop-card { background: #2a2a2a; border-radius: 10px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .shop-info h4 { margin: 0 0 5px 0; }
+        .shop-price { color: #00a8ff; font-weight: bold; }
+        .shop-btn { background: #333; padding: 8px 15px; border-radius: 8px; font-size: 14px; width: auto; margin: 0; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #222; border-top: 1px solid #333; display: flex; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+        .nav-item { color: #888; text-align: center; font-size: 12px; cursor: pointer; padding: 5px 15px; }
+        .nav-item.active { color: #00a8ff; font-weight: bold; }
+        .nav-icon { font-size: 20px; display: block; margin-bottom: 3px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="balance-title">Ваш баланс SNC</div>
+        <div class="balance-value" id="user-balance">...</div>
+    </div>
+
+    <div id="tab-home" class="container tab-content active">
+        <h3>Перевод SNC</h3>
+        <input type="text" id="target" placeholder="@username получателя">
+        <input type="number" id="amount" placeholder="Сумма перевода">
+        <button onclick="sendTransfer()">Отправить SNC</button>
+    </div>
+
+    <div id="tab-tasks" class="container tab-content">
+        <h3>Доступные задания</h3>
+        <div id="tasks-list">Загрузка...</div>
+    </div>
+
+    <div id="tab-shop" class="container tab-content">
+        <h3>Магазин</h3>
+        <div class="shop-grid">
+            <div class="shop-card">
+                <div class="shop-info">
+                    <h4>VIP Статус</h4>
+                    <div class="shop-price">1000 SNC</div>
+                </div>
+                <button class="shop-btn" onclick="tg.showAlert('В разработке')">Купить</button>
+            </div>
+            <div class="shop-card">
+                <div class="shop-info">
+                    <h4>Снежный Ник</h4>
+                    <div class="shop-price">500 SNC</div>
+                </div>
+                <button class="shop-btn" onclick="tg.showAlert('В разработке')">Купить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-leaderboard" class="container tab-content">
+        <h3>Топ Игроков</h3>
+        <div class="card" id="leaderboard-list">
+            Загрузка...
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <span class="nav-icon">🏠</span>Главная
+        </div>
+        <div class="nav-item" onclick="switchTab('tasks')">
+            <span class="nav-icon">📋</span>Задания
+        </div>
+        <div class="nav-item" onclick="switchTab('shop')">
+            <span class="nav-icon">🛒</span>Магазин
+        </div>
+        <div class="nav-item" onclick="switchTab('leaderboard')">
+            <span class="nav-icon">🏆</span>Топ
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const SERVER_URL = "https://ТВОЙ-САЙТ.up.railway.app"; 
+        
+        let username = tg.initDataUnsafe?.user?.username || `user_${tg.initDataUnsafe?.user?.id || 'unknown'}`;
+        username = username.toLowerCase();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            event.currentTarget.classList.add('active');
+
+            if(tabId === 'leaderboard') loadLeaderboard();
+        }
+
+        async function loadUserData() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/user/${username}`);
+                const data = await response.json();
+                
+                document.getElementById("user-balance").innerText = data.balance;
+                
+                const tasksHtml = data.tasks.map(t => `
+                    <div class="card task-row">
+                        <div class="task-info">
+                            <h4>${t.title}</h4>
+                            <div class="task-reward">+${t.reward} SNC</div>
+                        </div>
+                        <div class="task-status">${t.done ? '✅ Выполнено' : 'В процессе'}</div>
+                    </div>
+                `).join('');
+                document.getElementById("tasks-list").innerHTML = tasksHtml;
+            } catch (e) {
+                document.getElementById("user-balance").innerText = "Ошибка";
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/leaderboard`);
+                const data = await response.json();
+                
+                const boardHtml = data.map((user, index) => `
+                    <div class="leader-row">
+                        <div class="rank">#${index + 1}</div>
+                        <div class="username">@${user.username}</div>
+                        <div class="score">${user.balance}</div>
+                    </div>
+                `).join('');
+                document.getElementById("leaderboard-list").innerHTML = boardHtml;
+            } catch (e) {
+                document.getElementById("leaderboard-list").innerHTML = "Ошибка загрузки";
+            }
+        }
+
+        function sendTransfer() {
+            const target = document.getElementById("target").value;
+            const amount = document.getElementById("amount").value;
+
+            if (!target || !amount) {
+                tg.showAlert("Заполните все поля");
+                return;
+            }
+
+            const data = {
+                type: "transfer",
+                target: target,
+                amount: amount
+            };
+            tg.sendData(JSON.stringify(data));
+        }
+
+        loadUserData();
+    </script>
+</body>
+</html>
