@@ -5,11 +5,13 @@ import asyncio
 import logging
 import asyncpg
 import uvicorn
-from typing import List, Optional
+from datetime import datetime
+from typing import List, Optional, Dict, Any, Union
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel, Field, validator
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
@@ -19,214 +21,226 @@ from aiogram.types import (
     WebAppInfo, 
     LabeledPrice, 
     PreCheckoutQuery,
-    BotCommand
+    BotCommand,
+    MenuButtonWebApp,
+    ContentType
 )
+from aiogram.exceptions import TelegramBadRequest
 
 load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
+    datefmt="%d/%b/%Y %H:%M:%S"
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("SnowySNC.Core")
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-DATABASE_URL = os.getenv("DATABASE_URL")
-ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
-WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp.html"
+class AppConfig:
+    TOKEN: str = os.getenv("BOT_TOKEN")
+    DB_URL: str = os.getenv("DATABASE_URL")
+    ADMINS: List[int] = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
+    WEBAPP: str = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp.html"
+    PORT: int = int(os.getenv("PORT", 8000))
 
-class UserSchema(BaseModel):
+class TaskModel(BaseModel):
+    id: int
+    title: str
+    reward: int
+    done: bool = False
+
+class UserProfile(BaseModel):
     username: str
     balance: int
-    tasks: List[dict]
+    level: int = 1
+    tasks: List[TaskModel] = []
+    last_active: Optional[datetime] = None
 
-class LeaderboardEntry(BaseModel):
+class LeaderboardRow(BaseModel):
     username: str
     balance: int
 
-class DatabaseManager:
+class DatabaseProvider:
     def __init__(self, dsn: str):
         self.dsn = dsn
-        self.pool = None
+        self.pool: Optional[asyncpg.Pool] = None
 
-    async def connect(self):
-        for attempt in range(1, 6):
+    async def start(self):
+        for attempt in range(1, 7):
             try:
                 self.pool = await asyncpg.create_pool(
                     self.dsn,
-                    min_size=2,
-                    max_size=15,
-                    command_timeout=30,
-                    max_inactive_connection_lifetime=300
+                    min_size=10,
+                    max_size=30,
+                    max_queries=50000,
+                    max_inactive_connection_lifetime=600,
+                    command_timeout=60
                 )
                 async with self.pool.acquire() as conn:
                     await conn.execute("""
                         CREATE TABLE IF NOT EXISTS users (
                             username TEXT PRIMARY KEY,
                             balance BIGINT DEFAULT 0,
-                            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                            level INTEGER DEFAULT 1,
+                            xp INTEGER DEFAULT 0,
+                            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                         )
                     """)
-                logger.info("Database engine initialized successfully.")
+                logger.info("Database engine started successfully.")
                 return True
             except Exception as e:
-                logger.error(f"Database connection attempt {attempt} failed: {e}")
-                await asyncio.sleep(attempt * 2)
+                logger.error(f"Failed to connect to PG (Attempt {attempt}): {e}")
+                await asyncio.sleep(attempt * 1.5)
         return False
 
-    async def get_user_balance(self, username: str) -> int:
+    async def get_or_create_user(self, username: str) -> Dict[str, Any]:
         username = username.lower()
         async with self.pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username)
-            if row is None:
-                await conn.execute("INSERT INTO users (username, balance) VALUES ($1, 0)", username)
-                return 0
-            return row['balance']
+            row = await conn.fetchrow("SELECT username, balance, level FROM users WHERE username = $1", username)
+            if not row:
+                row = await conn.fetchrow(
+                    "INSERT INTO users (username, balance) VALUES ($1, 0) RETURNING username, balance, level", 
+                    username
+                )
+            return dict(row)
 
-    async def adjust_balance(self, username: str, amount: int) -> int:
+    async def increment_balance(self, username: str, amount: int) -> int:
         username = username.lower()
         async with self.pool.acquire() as conn:
             return await conn.fetchval("""
                 INSERT INTO users (username, balance) 
                 VALUES ($1, $2) 
                 ON CONFLICT (username) 
-                DO UPDATE SET balance = users.balance + $2 
+                DO UPDATE SET balance = users.balance + $2, updated_at = CURRENT_TIMESTAMP
                 RETURNING balance
             """, username, amount)
 
-    async def get_top_players(self, limit: int = 50) -> List[dict]:
+    async def get_top_list(self, limit: int = 50) -> List[Dict[str, Any]]:
         async with self.pool.acquire() as conn:
             rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT $1", limit)
             return [dict(r) for r in rows]
 
-    async def close(self):
+    async def stop(self):
         if self.pool:
             await self.pool.close()
+            logger.info("Database pool closed.")
 
-db = DatabaseManager(DATABASE_URL)
-bot = Bot(token=BOT_TOKEN)
+storage = DatabaseProvider(AppConfig.DB_URL)
+bot = Bot(token=AppConfig.TOKEN)
 dp = Dispatcher()
 
-def main_keyboard():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="🚀 Открыть SNC App", web_app=WebAppInfo(url=WEBAPP_URL))]],
-        resize_keyboard=True,
-        input_field_placeholder="Выберите действие..."
-    )
+def ui_keyboard():
+    builder = [[KeyboardButton(text="❄️ Запустить Snowy App", web_app=WebAppInfo(url=AppConfig.WEBAPP))]]
+    return ReplyKeyboardMarkup(keyboard=builder, resize_keyboard=True, input_field_placeholder="Управление счетом...")
 
 @dp.pre_checkout_query()
-async def process_pre_checkout(query: PreCheckoutQuery):
+async def on_pre_checkout(query: PreCheckoutQuery):
     await bot.answer_pre_checkout_query(query.id, ok=True)
 
 @dp.message(F.successful_payment)
-async def handle_payment_success(message: types.Message):
-    payload = message.successful_payment.invoice_payload
-    if payload.startswith("buy_snc:"):
-        parts = payload.split(":")
-        target_user = parts[1]
-        snc_amount = int(parts[2])
-        new_balance = await db.adjust_balance(target_user, snc_amount)
-        
-        logger.info(f"Payment success: {target_user} bought {snc_amount} SNC")
-        
+async def on_payment_done(message: types.Message):
+    info = message.successful_payment.invoice_payload
+    if info.startswith("topup:"):
+        _, target, snc_val = info.split(":")
+        final_bal = await storage.increment_balance(target, int(snc_val))
         await message.answer(
-            f"✨ *Транзакция завершена!*\n\n"
-            f"Начислено: +*{snc_amount}* SNC ❄️\n"
-            f"Текущий баланс: *{new_balance}* SNC",
+            f"💠 *Транзакция подтверждена*\n\n"
+            f"Объект: `{target}`\n"
+            f"Пополнение: +*{snc_val}* SNC\n"
+            f"Итоговый баланс: *{final_bal}* SNC",
             parse_mode="Markdown"
         )
 
 @dp.message(F.web_app_data)
-async def handle_webapp_data(message: types.Message):
+async def on_webapp_event(message: types.Message):
     try:
-        data = json.loads(message.web_app_data.data)
-        if data.get("type") == "transfer":
-            sender = (message.from_user.username or f"id{message.from_user.id}").lower()
-            target = str(data.get("target")).lower().replace("@", "").strip()
-            amount = int(data.get("amount"))
+        raw_payload = json.loads(message.web_app_data.data)
+        if raw_payload.get("type") == "transfer":
+            sender_id = (message.from_user.username or f"id{message.from_user.id}").lower()
+            target_id = str(raw_payload.get("target")).lower().replace("@", "").strip()
+            val = int(raw_payload.get("amount"))
 
-            if amount <= 0:
-                await message.answer("❌ Сумма должна быть больше нуля.")
-                return
-            if sender == target:
-                await message.answer("❌ Нельзя переводить монеты самому себе.")
+            if val <= 0 or sender_id == target_id:
                 return
 
-            current_sender_bal = await db.get_user_balance(sender)
-            if current_sender_bal < amount:
-                await message.answer("❌ Ошибка: Недостаточно SNC на балансе.")
+            current_s_bal = (await storage.get_or_create_user(sender_id))['balance']
+            if current_s_bal < val:
+                await message.answer("⚠️ Ошибка: недостаточно единиц SNC.")
                 return
 
-            async with db.pool.acquire() as conn:
-                target_exists = await conn.fetchval("SELECT 1 FROM users WHERE username = $1", target)
-                if not target_exists:
-                    await message.answer(f"❌ Игрок *{target}* еще ни разу не заходил в бота.", parse_mode="Markdown")
+            async with storage.pool.acquire() as conn:
+                check_t = await conn.fetchval("SELECT 1 FROM users WHERE username = $1", target_id)
+                if not check_t:
+                    await message.answer(f"⚠️ Субъект `@{target_id}` не найден в реестре.", parse_mode="Markdown")
                     return
-
-                await db.adjust_balance(sender, -amount)
-                await db.adjust_balance(target, amount)
                 
-                await message.answer(f"✅ *Успешный перевод!*\n\nОтправлено: *{amount}* SNC ❄️\nПолучатель: *{target}*", parse_mode="Markdown")
-    except Exception as e:
-        logger.error(f"WebApp data error: {e}")
+                async with conn.transaction():
+                    await storage.increment_balance(sender_id, -val)
+                    await storage.increment_balance(target_id, val)
+                    
+            await message.answer(
+                f"✅ *Перевод выполнен*\n\n"
+                f"Отправитель: `@{sender_id}`\n"
+                f"Получатель: `@{target_id}`\n"
+                f"Сумма: *{val}* SNC",
+                parse_mode="Markdown"
+            )
+    except Exception as exc:
+        logger.error(f"WebApp logic fail: {exc}")
 
 @dp.message(Command("start"))
-async def start_command(message: types.Message):
-    user_ref = (message.from_user.username or f"id{message.from_user.id}").lower()
-    balance = await db.get_user_balance(user_ref)
+async def on_cmd_start(message: types.Message):
+    u_id = (message.from_user.username or f"id{message.from_user.id}").lower()
+    data = await storage.get_or_create_user(u_id)
     
-    welcome_text = (
-        f"❄️ *Добро пожаловать в Snowy SNC!*\n\n"
-        f"Ваш аккаунт: `@{user_ref}`\n"
-        f"Ваш баланс: *{balance}* SNC\n\n"
-        f"Используйте кнопку ниже, чтобы запустить приложение и управлять своими активами."
+    output = (
+        f"🧊 *SNOWY SNC INTERFACE*\n\n"
+        f"Идентификатор: `@{u_id}`\n"
+        f"Текущий баланс: *{data['balance']}* SNC\n"
+        f"Уровень доступа: *{data['level']}*"
     )
     
-    if message.from_user.id in ADMIN_IDS:
-        welcome_text += "\n\n🛠 *Админ-панель активна:*\nНачисление: `@username +100`"
-    
-    await message.answer(welcome_text, parse_mode="Markdown", reply_markup=main_keyboard())
+    if message.from_user.id in AppConfig.ADMINS:
+        output += "\n\n🛠 *Административный доступ подтвержден.*"
+        
+    await message.answer(output, parse_mode="Markdown", reply_markup=ui_keyboard())
 
 @dp.message(F.chat.type == "private")
-async def private_message_router(message: types.Message):
-    user_ref = (message.from_user.username or f"id{message.from_user.id}").lower()
+async def on_private_interaction(message: types.Message):
+    u_id = (message.from_user.username or f"id{message.from_user.id}").lower()
     
-    if message.from_user.id in ADMIN_IDS:
-        admin_match = re.match(r"^@(\w+)\s+([+-]?\d+)$", message.text or "")
-        if admin_match:
-            target_user = admin_match.group(1).lower()
-            change_amount = int(admin_match.group(2))
-            
-            new_total = await db.adjust_balance(target_user, change_amount)
-            await message.answer(f"⚙️ *Статус изменен:*\nПользователь: `@{target_user}`\nНовый баланс: *{new_total}* SNC ❄️", parse_mode="Markdown")
+    if message.from_user.id in AppConfig.ADMINS:
+        admin_rx = re.match(r"^@(\w+)\s+([+-]?\d+)$", message.text or "")
+        if admin_rx:
+            t_user = admin_rx.group(1).lower()
+            t_amt = int(admin_rx.group(2))
+            res_bal = await storage.increment_balance(t_user, t_amt)
+            await message.answer(f"💠 Реестр обновлен. `@{t_user}`: *{res_bal}* SNC.")
             return
 
-    current_balance = await db.get_user_balance(user_ref)
-    await message.answer(f"❄️ Ваш текущий баланс: *{current_balance}* SNC", parse_mode="Markdown", reply_markup=main_keyboard())
+    u_data = await storage.get_or_create_user(u_id)
+    await message.answer(f"❄️ Баланс: *{u_data['balance']}* SNC", reply_markup=ui_keyboard())
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    db_status = await db.connect()
-    if not db_status:
-        logger.critical("Failed to connect to database. Shutdown initiated.")
-        return
+async def app_lifespan(app: FastAPI):
+    if not await storage.start():
+        logger.critical("Database initialization failed. Shifting to emergency stop.")
+        raise SystemExit(1)
 
-    await bot.set_my_commands([
-        BotCommand(command="start", description="Запустить бота / Баланс"),
-    ])
+    await bot.set_my_commands([BotCommand(command="start", description="Главная консоль")])
+    await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Snowy App", web_app=WebAppInfo(url=AppConfig.WEBAPP)))
     
     await bot.delete_webhook(drop_pending_updates=True)
-    polling_task = asyncio.create_task(dp.start_polling(bot))
-    logger.info("Bot polling started.")
+    asyncio.create_task(dp.start_polling(bot))
+    logger.info("Bot background polling started.")
     
     yield
     
-    polling_task.cancel()
-    await db.close()
+    await storage.stop()
     await bot.session.close()
-    logger.info("Services gracefully shut down.")
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=app_lifespan, title="Snowy SNC API Service", version="2.5.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -236,44 +250,45 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/user/{username}", response_model=UserSchema)
-async def get_user_data(username: str):
+@app.get("/api/user/{username}", response_model=UserProfile)
+async def api_fetch_user(username: str):
     try:
-        balance = await db.get_user_balance(username.lower())
+        raw = await storage.get_or_create_user(username)
         return {
-            "username": username,
-            "balance": balance,
+            "username": raw['username'],
+            "balance": raw['balance'],
+            "level": raw['level'],
             "tasks": [
-                {"id": 1, "title": "Подписаться на канал", "reward": 150, "done": False},
-                {"id": 2, "title": "Пригласить друга", "reward": 500, "done": False}
+                {"id": 1, "title": "Ежедневное сканирование", "reward": 75, "done": False},
+                {"id": 2, "title": "Приглашение рекрута", "reward": 300, "done": False}
             ]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"API Error: {e}")
+        raise HTTPException(status_code=500, detail="Internal core failure")
 
-@app.get("/api/leaderboard", response_model=List[LeaderboardEntry])
-async def get_top_list():
+@app.get("/api/leaderboard", response_model=List[LeaderboardRow])
+async def api_fetch_top():
     try:
-        return await db.get_top_players(50)
+        return await storage.get_top_list(50)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/buy_snc/{username}/{snc}/{stars}")
-async def create_payment_link(username: str, snc: int, stars: int):
+@app.get("/api/buy_snc/{username}/{snc_val}/{star_val}")
+async def api_generate_invoice(username: str, snc_val: int, star_val: int):
     try:
-        invoice_link = await bot.create_invoice_link(
-            title=f"Пакет {snc} SNC",
-            description=f"Приобретение {snc} монет для Snowy SNC App ❄️",
-            payload=f"buy_snc:{username.lower()}:{snc}",
+        link = await bot.create_invoice_link(
+            title=f"Контейнер {snc_val} SNC",
+            description=f"Приобретение энергетических единиц SNC для модуля @{username}",
+            payload=f"topup:{username.lower()}:{snc_val}",
             provider_token="",
             currency="XTR",
-            prices=[LabeledPrice(label=f"{snc} SNC", amount=int(stars))]
+            prices=[LabeledPrice(label=f"{snc_val} SNC", amount=int(star_val))]
         )
-        return {"invoice_url": invoice_link}
+        return {"invoice_url": link}
     except Exception as e:
-        logger.error(f"Invoice error: {e}")
-        raise HTTPException(status_code=500, detail="Could not create invoice link")
+        logger.error(f"Invoice generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Gateway error")
 
 if __name__ == "__main__":
-    app_port = int(os.getenv("PORT", 8000))
-    uvicorn.run("bot:app", host="0.0.0.0", port=app_port, log_level="info")
+    uvicorn.run("bot:app", host="0.0.0.0", port=AppConfig.PORT, reload=False, workers=4)
