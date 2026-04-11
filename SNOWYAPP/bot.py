@@ -1,221 +1,177 @@
-import os
-import re
-import json
 import asyncio
-import logging
+import os
+import json
+import re
 import asyncpg
 import uvicorn
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
-from aiogram.types import (
-    ReplyKeyboardMarkup, 
-    KeyboardButton, 
-    WebAppInfo, 
-    LabeledPrice, 
-    PreCheckoutQuery,
-    BotCommand,
-    MenuButtonWebApp
-)
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo, LabeledPrice, PreCheckoutQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger("SnowySNC")
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-DATABASE_URL = os.getenv("DATABASE_URL")
 ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]
-WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp.html"
+DATABASE_URL = os.getenv("DATABASE_URL")
+WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/sncapp.html"
 
-class TaskItem(BaseModel):
-    id: int
-    title: str
-    reward: int
-    done: bool
-
-class UserData(BaseModel):
-    username: str
-    balance: int
-    tasks: List[TaskItem]
-
-class LeaderRow(BaseModel):
-    username: str
-    balance: int
-
-class DB:
-    def __init__(self, url: str):
-        self.url = url
-        self.pool = None
-
-    async def connect(self):
-        for i in range(1, 11):
-            try:
-                self.pool = await asyncpg.create_pool(
-                    self.url,
-                    min_size=2,
-                    max_size=10,
-                    command_timeout=60
-                )
-                async with self.pool.acquire() as conn:
-                    await conn.execute("""
-                        CREATE TABLE IF NOT EXISTS users (
-                            username TEXT PRIMARY KEY,
-                            balance BIGINT DEFAULT 0,
-                            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """)
-                logger.info("База данных подключена")
-                return True
-            except Exception as e:
-                logger.error(f"Ошибка БД {i}: {e}")
-                await asyncio.sleep(5)
-        return False
-
-    async def get_bal(self, user: str) -> int:
-        async with self.pool.acquire() as conn:
-            res = await conn.fetchval("SELECT balance FROM users WHERE username = $1", user.lower())
-            if res is None:
-                await conn.execute("INSERT INTO users (username, balance) VALUES ($1, 0)", user.lower())
-                return 0
-            return res
-
-    async def add_bal(self, user: str, amt: int) -> int:
-        async with self.pool.acquire() as conn:
-            return await conn.fetchval("""
-                INSERT INTO users (username, balance) VALUES ($1, $2)
-                ON CONFLICT (username) DO UPDATE SET balance = users.balance + $2
-                RETURNING balance
-            """, user.lower(), amt)
-
-    async def top(self):
-        async with self.pool.acquire() as conn:
-            rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT 50")
-            return [dict(r) for r in rows]
-
-db = DB(DATABASE_URL)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+app = FastAPI()
+db_pool = None
 
-def main_kb():
-    return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="❄️ Открыть Snowy App", web_app=WebAppInfo(url=WEBAPP_URL))]],
-        resize_keyboard=True
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@dp.pre_checkout_query()
-async def pre_checkout(q: PreCheckoutQuery):
+async def init_db():
+    global db_pool
+    db_pool = await asyncpg.create_pool(DATABASE_URL)
+    async with db_pool.acquire() as conn:
+        await conn.execute("CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, balance INTEGER DEFAULT 0)")
+
+async def check_user(username: str):
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username.lower())
+        if row is None:
+            await conn.execute("INSERT INTO users (username, balance) VALUES ($1, $2)", username.lower(), 0)
+            return 0
+        return row['balance']
+
+async def update_balance(username: str, amount: int):
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET balance = balance + $1 WHERE username = $2", amount, username.lower())
+        row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username.lower())
+        return row['balance'] if row else 0
+
+def get_username(user: types.User):
+    return user.username.lower() if user.username else f"user_{user.id}"
+
+def get_keyboard():
+    return ReplyKeyboardMarkup(keyboard=[[
+        KeyboardButton(text="🚀 Ворваться в Штаб", web_app=WebAppInfo(url=WEBAPP_URL))
+    ]], resize_keyboard=True)
+
+@app.get("/api/user/{username}")
+async def api_get_user(username: str):
+    balance = await check_user(username)
+    tasks = [
+        {"title": "Вступить в отряд", "reward": 500, "done": False},
+        {"title": "Пригласить бойца", "reward": 1000, "done": False}
+    ]
+    return {"username": username, "balance": balance, "tasks": tasks}
+
+@app.get("/api/leaderboard")
+async def api_get_leaderboard():
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT 10")
+        return [dict(r) for r in rows]
+
+@app.get("/api/buy_snc/{username}/{amount_snc}/{amount_stars}")
+async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
+    prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=amount_stars)]
     try:
-        await q.answer(ok=True)
+        link = await bot.create_invoice_link(
+            title="Пополнение SNC",
+            description=f"Пакет на {amount_snc} SNC для {username}",
+            payload=json.dumps({"user": username, "amount": amount_snc}),
+            currency="XTR",
+            prices=prices
+        )
+        return {"invoice_url": link}
     except Exception as e:
-        logger.error(f"Ошибка PreCheckout: {e}")
-
-@dp.message(F.successful_payment)
-async def success_pay(m: types.Message):
-    try:
-        pay = m.successful_payment.invoice_payload
-        if pay.startswith("buy:"):
-            _, target, amt = pay.split(":")
-            nb = await db.add_bal(target, int(amt))
-            await m.answer(f"✅ Оплата прошла успешно!\nНачислено: +{amt} SNC.\nТекущий баланс: {nb} ❄️")
-    except Exception as e:
-        logger.error(f"Ошибка обработки платежа: {e}")
-
-@dp.message(F.web_app_data)
-async def web_data(m: types.Message):
-    try:
-        data = json.loads(m.web_app_data.data)
-        if data.get("type") == "transfer":
-            u = (m.from_user.username or f"id{m.from_user.id}").lower()
-            t = str(data.get("target")).lower().replace("@", "").strip()
-            v = int(data.get("amount"))
-            if v <= 0 or u == t: 
-                return
-            if await db.get_bal(u) < v:
-                await m.answer("❌ Недостаточно SNC.")
-                return
-            async with db.pool.acquire() as conn:
-                if not await conn.fetchval("SELECT 1 FROM users WHERE username = $1", t):
-                    await m.answer(f"❌ Пользователь @{t} не найден.")
-                    return
-                await db.add_bal(u, -v)
-                await db.add_bal(t, v)
-                await m.answer(f"✅ Перевод {v} SNC пользователю @{t} выполнен ❄️")
-    except Exception as e:
-        logger.error(e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @dp.message(Command("start"))
-async def start(m: types.Message):
-    u = (m.from_user.username or f"id{m.from_user.id}").lower()
-    b = await db.get_bal(u)
-    await m.answer(f"❄️ Привет, {u}!\nТвой баланс: {b} SNC", reply_markup=main_kb())
+async def cmd_start(message: types.Message):
+    username = get_username(message.from_user)
+    balance = await check_user(username)
+    if message.from_user.id in ADMIN_IDS:
+        text = "👑 *SNC Admin*\n\nЛС: `@username +100` / `@username -50`\nГруппы: `/addsnc @username 100`"
+        await message.answer(text, parse_mode="Markdown", reply_markup=get_keyboard())
+    else:
+        text = f"👋 Привет, *{username}*!\n\nТвой баланс: *{balance}* SNC ❄️"
+        await message.answer(text, parse_mode="Markdown", reply_markup=get_keyboard())
+
+@dp.message(Command("mysnc"))
+async def cmd_mysnc(message: types.Message):
+    username = get_username(message.from_user)
+    balance = await check_user(username)
+    text = f"❄️ У пользователя *{username}* *{balance}* SNC"
+    await message.answer(text, parse_mode="Markdown", reply_markup=get_keyboard())
+
+@dp.message(Command("mynfts"))
+async def cmd_mynfts(message: types.Message):
+    username = get_username(message.from_user)
+    await check_user(username)
+    text = f"🖼️ У пользователя *{username}* пока нет NFT."
+    await message.answer(text, parse_mode="Markdown")
+
+@dp.message(Command("addsnc"))
+async def cmd_addsnc(message: types.Message):
+    if message.chat.type != "private" and message.from_user.id in ADMIN_IDS:
+        match = re.match(r"^/addsnc\s+@(\w+)\s+([+-]?\d+)$", message.text or "")
+        if match:
+            target = match.group(1).lower()
+            amt = int(match.group(2))
+            await check_user(target)
+            new_balance = await update_balance(target, amt)
+            text = f"✅ У пользователя *{target}* *{new_balance}* SNC"
+            await message.answer(text, parse_mode="Markdown")
 
 @dp.message(F.chat.type == "private")
-async def admin_msg(m: types.Message):
-    u = (m.from_user.username or f"id{m.from_user.id}").lower()
-    if m.from_user.id in ADMIN_IDS and m.text:
-        match = re.match(r"^@(\w+)\s+([+-]?\d+)$", m.text.strip())
+async def handle_private(message: types.Message):
+    username = get_username(message.from_user)
+    await check_user(username)
+    if message.from_user.id in ADMIN_IDS:
+        match = re.match(r"^@(\w+)\s+([+-]?\d+)$", message.text or "")
         if match:
-            target, amt = match.group(1).lower(), int(match.group(2))
-            res = await db.add_bal(target, amt)
-            await m.answer(f"⚙️ Баланс @{target} изменен. Текущий баланс: {res} SNC")
+            target = match.group(1).lower()
+            amt = int(match.group(2))
+            async with db_pool.acquire() as conn:
+                row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", target)
+            if row is not None:
+                new_balance = await update_balance(target, amt)
+                text = f"✅ У пользователя *{target}* *{new_balance}* SNC"
+            else:
+                text = f"❌ Пользователь *@{target}* не найден."
+            await message.answer(text, parse_mode="Markdown")
             return
-    await m.answer(f"❄️ Твой баланс: {await db.get_bal(u)} SNC\nОткрой приложение, чтобы продолжить!", reply_markup=main_kb())
+    balance = await check_user(username)
+    text = f"❄️ У пользователя *{username}* *{balance}* SNC"
+    await message.answer(text, parse_mode="Markdown", reply_markup=get_keyboard())
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    if not await db.connect():
-        logger.critical("КРИТИЧЕСКАЯ ОШИБКА БД")
-    await bot.set_my_commands([BotCommand(command="start", description="Главное меню")])
-    await bot.set_chat_menu_button(menu_button=MenuButtonWebApp(text="Snowy App", web_app=WebAppInfo(url=WEBAPP_URL)))
+@dp.pre_checkout_query()
+async def process_pre_checkout(query: PreCheckoutQuery):
+    await query.answer(ok=True)
+
+@dp.message(F.successful_payment)
+async def success_pay(message: types.Message):
+    payload = json.loads(message.successful_payment.invoice_payload)
+    user = payload['user']
+    amount = payload['amount']
+    await update_balance(user, amount)
+    await message.answer(f"✅ Зачислено {amount} SNC!")
+
+async def run_bot():
     await bot.delete_webhook(drop_pending_updates=True)
-    polling_task = asyncio.create_task(dp.start_polling(bot))
-    yield
-    polling_task.cancel()
-    if db.pool: 
-        await db.pool.close()
-    await bot.session.close()
+    await dp.start_polling(bot)
 
-app = FastAPI(lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+async def run_api():
+    port = int(os.getenv("PORT", 8080))
+    config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
-@app.get("/")
-async def health():
-    return {"status": "ok", "db_connected": db.pool is not None}
-
-@app.get("/api/user/{u}", response_model=UserData)
-async def api_u(u: str):
-    b = await db.get_bal(u.lower())
-    return {"username": u, "balance": b, "tasks": [{"id":1,"title":"Подписка на канал","reward":100,"done":False}]}
-
-@app.get("/api/leaderboard", response_model=List[LeaderRow])
-async def api_top():
-    return await db.top()
-
-@app.get("/api/buy_snc/{u}/{snc}/{stars}")
-async def api_pay(u: str, snc: int, stars: int):
-    try:
-        url = await bot.create_invoice_link(
-            title=f"{snc} SNC Units", 
-            description=f"Пополнение баланса на {snc} SNC", 
-            payload=f"buy:{u.lower()}:{snc}", 
-            provider_token="", 
-            currency="XTR", 
-            prices=[LabeledPrice(label="SNC", amount=int(stars))]
-        )
-        return {"invoice_url": url}
-    except Exception as e:
-        logger.error(f"Ошибка создания счета: {e}")
-        return {"error": "Gateway Error"}
+async def main():
+    await init_db()
+    await asyncio.gather(run_bot(), run_api())
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+    asyncio.run(main())

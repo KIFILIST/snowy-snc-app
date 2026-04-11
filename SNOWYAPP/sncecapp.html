@@ -16,6 +16,7 @@
             --border: rgba(255, 255, 255, 0.1);
             --text-main: #ffffff;
             --text-muted: #8e8e93;
+            --success: #00ff88;
         }
 
         body {
@@ -27,7 +28,7 @@
             color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 100px;
+            padding-bottom: 120px;
             min-height: 100vh;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
@@ -297,6 +298,16 @@
                 </div>
                 <button class="shop-btn" onclick="buySNC(15000, 500)">Приобрести</button>
             </div>
+            <div class="shop-card">
+                <div class="shop-header">
+                    <div class="shop-info">
+                        <h4>Снежный Магнат</h4>
+                        <p>50,000 SNC ед.</p>
+                    </div>
+                    <div class="shop-price"><span>⭐</span> 1500</div>
+                </div>
+                <button class="shop-btn" onclick="buySNC(50000, 1500)">Приобрести</button>
+            </div>
         </div>
     </div>
 
@@ -319,6 +330,16 @@
                 <span class="nft-icon">🧊</span>
                 <p style="font-weight: 800; margin: 0; font-size: 14px;">Ледяная эгида</p>
                 <span style="font-size: 10px; color: var(--primary); font-weight: 800;">EPIC</span>
+            </div>
+            <div class="nft-card">
+                <span class="nft-icon">💎</span>
+                <p style="font-weight: 800; margin: 0; font-size: 14px;">Кристалл Власти</p>
+                <span style="font-size: 10px; color: var(--accent); font-weight: 800;">MYTHIC</span>
+            </div>
+            <div class="nft-card">
+                <span class="nft-icon">⚡</span>
+                <p style="font-weight: 800; margin: 0; font-size: 14px;">Грозовая Снежинка</p>
+                <span style="font-size: 10px; color: #fff; font-weight: 800;">LEGENDARY</span>
             </div>
         </div>
     </div>
@@ -365,13 +386,17 @@
             });
             document.getElementById(`tab-${tabId}`).classList.add('active');
             if(tabId === 'leaderboard') loadLeaderboard();
-            if(tabId === 'tasks') loadUserData();
+            if(tabId === 'tasks' || tabId === 'home') loadUserData();
             tg.HapticFeedback.impactOccurred('medium');
         }
 
         async function loadUserData() {
             try {
-                const response = await fetch(`${SERVER_URL}/api/user/${username}`);
+                const response = await fetch(`${SERVER_URL}/api/user/${username}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 const data = await response.json();
                 document.getElementById("user-balance").innerText = data.balance.toLocaleString();
                 
@@ -381,20 +406,25 @@
                             <h4 style="margin:0; font-size:15px;">${t.title}</h4>
                             <div class="task-reward">+${t.reward} SNC</div>
                         </div>
-                        <div class="status-badge" style="${t.done ? 'color:#00ff88; background:rgba(0,255,136,0.1);' : ''}">
+                        <div class="status-badge" style="${t.done ? 'color:var(--success); background:rgba(0,255,136,0.1);' : ''}">
                             ${t.done ? 'Завершено' : 'В работе'}
                         </div>
                     </div>
                 `).join('');
                 document.getElementById("tasks-list").innerHTML = tasksHtml || "Нет доступных миссий.";
             } catch (e) {
+                console.error("Load error:", e);
                 document.getElementById("user-balance").innerText = "---";
             }
         }
 
         async function loadLeaderboard() {
             try {
-                const response = await fetch(`${SERVER_URL}/api/leaderboard`);
+                const response = await fetch(`${SERVER_URL}/api/leaderboard`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 const data = await response.json();
                 const boardHtml = data.map((user, index) => {
                     let rankClass = index === 0 ? 'rank-1' : (index === 1 ? 'rank-2' : (index === 2 ? 'rank-3' : ''));
@@ -420,13 +450,17 @@
                 return;
             }
             tg.HapticFeedback.notificationOccurred('warning');
-            tg.sendData(JSON.stringify({ type: "transfer", target: target, amount: parseInt(amount) }));
+            tg.sendData(JSON.stringify({ type: "transfer", target: target.toLowerCase(), amount: parseInt(amount) }));
         }
 
         async function buySNC(amountSnc, amountStars) {
             tg.HapticFeedback.impactOccurred('heavy');
             try {
-                const response = await fetch(`${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`);
+                const response = await fetch(`${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 const data = await response.json();
                 
                 if (data.invoice_url) {
@@ -443,11 +477,13 @@
                     tg.showAlert("Не удалось сформировать счет. Попробуйте позже.");
                 }
             } catch (e) {
-                tg.showAlert("Ошибка подключения к платежному шлюзу.");
+                console.error("Payment error:", e);
+                tg.showAlert("Ошибка подключения к платежному шлюзу. Проверьте статус сервера.");
             }
         }
 
         loadUserData();
+        setInterval(loadUserData, 15000);
     </script>
 </body>
 </html>
