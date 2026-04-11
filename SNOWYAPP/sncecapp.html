@@ -7,108 +7,254 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-main: #0f111a;
-            --primary: #00a8ff;
-            --primary-glow: rgba(0, 168, 255, 0.4);
-            --card-bg: rgba(30, 35, 50, 0.6);
+            --bg-main: #0a0c14;
+            --primary: #00d2ff;
+            --secondary: #3a7bd5;
+            --accent: #f9a826;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --text-main: #ffffff;
-            --text-muted: #888888;
+            --text-muted: #a0a0b0;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: radial-gradient(circle at top, #1a1e2e 0%, var(--bg-main) 100%); color: var(--text-main); margin: 0; padding: 0; padding-bottom: 80px; min-height: 100vh; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseGlow { 0% { text-shadow: 0 0 10px var(--primary-glow); } 50% { text-shadow: 0 0 25px var(--primary-glow), 0 0 10px var(--primary); } 100% { text-shadow: 0 0 10px var(--primary-glow); } }
-        .header { text-align: center; padding: 40px 20px 30px; background: linear-gradient(180deg, rgba(0, 168, 255, 0.1) 0%, transparent 100%); border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-        .balance-title { font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .balance-value { font-size: 48px; font-weight: 800; margin: 10px 0; background: linear-gradient(90deg, #00a8ff, #00e1ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: pulseGlow 3s infinite; }
-        .container { padding: 20px; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: radial-gradient(circle at top right, #16213e 0%, var(--bg-main) 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 90px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glow { 0%, 100% { filter: drop-shadow(0 0 10px rgba(0, 210, 255, 0.3)); } 50% { filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.6)); } }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-5px) rotate(5deg); } }
+        @keyframes spinSnow { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); } 100% { transform: rotate(360deg) scale(1); } }
+
+        .header {
+            text-align: center;
+            padding: 50px 20px;
+            background: linear-gradient(180deg, rgba(58, 123, 213, 0.15) 0%, transparent 100%);
+            position: relative;
+        }
+
+        .balance-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .balance-value {
+            font-size: 54px;
+            font-weight: 900;
+            margin: 12px 0;
+            background: linear-gradient(90deg, #fff, var(--primary), #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 3s infinite ease-in-out;
+        }
+
+        .container { padding: 0 20px; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .menu-btn { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: center; backdrop-filter: blur(10px); cursor: pointer; transition: 0.3s; }
-        .menu-btn:active { transform: scale(0.95); }
-        .menu-btn span { display: block; font-size: 24px; margin-bottom: 8px; }
-        input { width: 100%; padding: 16px; margin-bottom: 15px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0,0,0, 0.3); color: white; box-sizing: border-box; font-size: 16px; backdrop-filter: blur(10px); outline: none; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 15px var(--primary-glow); }
-        button { width: 100%; padding: 16px; border-radius: 14px; border: none; background: linear-gradient(90deg, #00a8ff, #0072ff); color: white; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px var(--primary-glow); transition: 0.2s; }
-        button:active { transform: scale(0.97); box-shadow: 0 2px 10px var(--primary-glow); }
-        .card { background: var(--card-bg); padding: 18px; border-radius: 16px; margin-bottom: 12px; border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
-        .leader-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-        .leader-row:last-child { border-bottom: none; }
-        .rank { font-weight: 900; width: 35px; color: #555; font-size: 18px; }
-        .rank-1 { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-        .rank-2 { color: #c0c0c0; text-shadow: 0 0 10px rgba(192, 192, 192, 0.5); }
-        .rank-3 { color: #cd7f32; text-shadow: 0 0 10px rgba(205, 127, 50, 0.5); }
-        .username { flex-grow: 1; font-size: 16px; }
-        .score { font-weight: bold; color: var(--primary); font-size: 16px; text-shadow: 0 0 8px var(--primary-glow); }
-        .shop-grid { display: grid; gap: 15px; }
-        .shop-card { background: var(--card-bg); border-radius: 16px; padding: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.05); }
-        .shop-info h4 { margin: 0 0 5px 0; font-size: 18px; }
-        .shop-price { color: #f9a826; font-weight: bold; display: flex; align-items: center; gap: 5px; }
-        .shop-btn { width: auto; padding: 10px 20px; border-radius: 10px; margin: 0; background: linear-gradient(90deg, #f9a826, #f29000); box-shadow: 0 4px 15px rgba(249, 168, 38, 0.4); }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-out forwards; }
+
+        .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .menu-btn {
+            background: var(--glass);
+            padding: 22px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            backdrop-filter: blur(15px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .menu-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.08); }
+        .menu-btn span { display: block; font-size: 28px; margin-bottom: 10px; }
+        .menu-btn p { margin: 0; font-weight: 600; font-size: 14px; }
+
+        .card {
+            background: var(--glass);
+            padding: 22px;
+            border-radius: 24px;
+            margin-bottom: 15px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+        }
+
+        input {
+            width: 100%;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: 0.3s;
+            outline: none;
+        }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(0, 210, 255, 0.2); }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            border-radius: 18px;
+            border: none;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(0, 168, 255, 0.3);
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+
+        .section-title { font-size: 20px; font-weight: 800; margin: 0 0 15px 5px; }
+
+        .leader-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.02);
+            transition: 0.2s;
+        }
+        .leader-row:hover { background: rgba(255,255,255,0.05); }
+        .rank { font-weight: 900; width: 40px; font-size: 18px; font-style: italic; opacity: 0.5; }
+        .rank-1 { color: #FFD700; opacity: 1; }
+        .rank-2 { color: #C0C0C0; opacity: 1; }
+        .rank-3 { color: #CD7F32; opacity: 1; }
+        .username { flex-grow: 1; font-weight: 600; font-size: 15px; }
+        .score { font-weight: 800; color: var(--primary); font-family: 'Monaco', monospace; }
+
+        .shop-card {
+            background: var(--glass);
+            border-radius: 22px;
+            padding: 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 12px;
+        }
+        .shop-info h4 { margin: 0 0 4px 0; font-size: 18px; }
+        .shop-info p { margin: 0; font-size: 13px; color: var(--text-muted); }
+        .shop-price { margin-top: 8px; color: var(--accent); font-weight: 800; display: flex; align-items: center; gap: 6px; }
+        .shop-btn { width: auto; padding: 12px 22px; border-radius: 14px; background: linear-gradient(135deg, #f9a826, #f29000); box-shadow: 0 5px 15px rgba(249, 168, 38, 0.3); font-size: 14px; }
+
         .task-row { display: flex; justify-content: space-between; align-items: center; }
-        .task-info h4 { margin: 0 0 5px 0; }
-        .task-reward { color: var(--primary); font-size: 14px; font-weight: bold; }
-        .task-status { background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 8px; font-size: 12px; }
+        .task-reward { color: var(--primary); font-weight: 800; font-size: 14px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+        .status-badge { background: rgba(255,255,255,0.08); padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
         .nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .nft-card { background: var(--card-bg); border-radius: 16px; padding: 30px 15px; text-align: center; border: 1px dashed rgba(255,255,255,0.2); color: var(--text-muted); }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 17, 26, 0.9); border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-around; padding: 15px 0; padding-bottom: calc(15px + env(safe-area-inset-bottom)); backdrop-filter: blur(20px); z-index: 100; }
-        .nav-item { color: var(--text-muted); text-align: center; font-size: 12px; cursor: pointer; padding: 0 15px; transition: 0.3s; }
-        .nav-item.active { color: var(--primary); font-weight: bold; transform: translateY(-2px); text-shadow: 0 0 10px var(--primary-glow); }
-        .nav-icon { font-size: 24px; display: block; margin-bottom: 4px; }
+        .nft-card {
+            background: var(--glass);
+            border-radius: 24px;
+            padding: 35px 15px;
+            text-align: center;
+            border: 1px dashed rgba(255,255,255,0.15);
+            transition: 0.3s;
+        }
+        .nft-card:active { border-color: var(--primary); background: rgba(0, 210, 255, 0.05); }
+        .nft-icon { font-size: 40px; margin-bottom: 15px; display: block; animation: float 4s ease-in-out infinite; }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background: rgba(20, 25, 40, 0.85);
+            backdrop-filter: blur(25px);
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .nav-item {
+            color: var(--text-muted);
+            text-align: center;
+            cursor: pointer;
+            padding: 10px 15px;
+            border-radius: 20px;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 1;
+        }
+        .nav-item.active { color: var(--primary); background: rgba(0, 210, 255, 0.08); }
+        .nav-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase; }
+
+        .snow-anim { display: inline-block; animation: spinSnow 6s linear infinite; font-size: inherit; vertical-align: middle; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="balance-title">Ваш баланс SNC</div>
-        <div class="balance-value" id="user-balance">...</div>
+        <div class="balance-title">Текущий баланс</div>
+        <div class="balance-value" id="user-balance">0</div>
     </div>
 
     <div id="tab-home" class="container tab-content active">
         <div class="main-menu">
             <div class="menu-btn" onclick="switchTab('nfts')">
-                <span>💎</span> Мои NFT
+                <span>💎</span> <p>Артефакты</p>
             </div>
             <div class="menu-btn" onclick="switchTab('leaderboard')">
-                <span>🏆</span> Лидеры
+                <span>🏆</span> <p>Рейтинг</p>
             </div>
         </div>
 
+        <h2 class="section-title">Перевод средств</h2>
         <div class="card">
-            <h3 style="margin-top:0;">Перевод SNC</h3>
             <input type="text" id="target" placeholder="@username получателя">
             <input type="number" id="amount" placeholder="Сумма перевода">
-            <button onclick="sendTransfer()">Отправить SNC</button>
+            <button onclick="sendTransfer()">Подтвердить перевод</button>
         </div>
     </div>
 
     <div id="tab-tasks" class="container tab-content">
-        <h3 style="margin-top:0;">Задания</h3>
-        <div id="tasks-list">Загрузка...</div>
+        <h2 class="section-title">Задания</h2>
+        <div id="tasks-list">
+            <div class="card" style="text-align: center; padding: 40px; color: var(--text-muted);">Синхронизация модулей...</div>
+        </div>
     </div>
 
     <div id="tab-shop" class="container tab-content">
-        <h3 style="margin-top:0;">Купить SNC</h3>
+        <h2 class="section-title">Обмен SNC</h2>
         <div class="shop-grid">
             <div class="shop-card">
                 <div class="shop-info">
-                    <h4>Пакет Новичка</h4>
-                    <div style="color:var(--text-muted); font-size:14px; margin-bottom:5px;">+1000 SNC</div>
+                    <h4>Набор новичка</h4>
+                    <p>Включает 1,000 SNC</p>
                     <div class="shop-price">⭐ 50 Звезд</div>
                 </div>
                 <button class="shop-btn" onclick="buySNC(1000, 50)">Купить</button>
             </div>
             <div class="shop-card">
                 <div class="shop-info">
-                    <h4>Пакет Профи</h4>
-                    <div style="color:var(--text-muted); font-size:14px; margin-bottom:5px;">+5000 SNC</div>
+                    <h4>Набор ветерана</h4>
+                    <p>Включает 5,000 SNC</p>
                     <div class="shop-price">⭐ 200 Звезд</div>
                 </div>
                 <button class="shop-btn" onclick="buySNC(5000, 200)">Купить</button>
             </div>
             <div class="shop-card">
                 <div class="shop-info">
-                    <h4>Пакет Магната</h4>
-                    <div style="color:var(--text-muted); font-size:14px; margin-bottom:5px;">+15000 SNC</div>
+                    <h4>Элитный резерв</h4>
+                    <p>Включает 15,000 SNC</p>
                     <div class="shop-price">⭐ 500 Звезд</div>
                 </div>
                 <button class="shop-btn" onclick="buySNC(15000, 500)">Купить</button>
@@ -117,46 +263,62 @@
     </div>
 
     <div id="tab-leaderboard" class="container tab-content">
-        <h3 style="margin-top:0;">Топ Игроков</h3>
+        <h2 class="section-title">Элитные игроки</h2>
         <div class="card" id="leaderboard-list">
-            Загрузка...
+            <div style="text-align: center; padding: 20px; color: var(--text-muted);">Калибровка позиций...</div>
         </div>
     </div>
 
     <div id="tab-nfts" class="container tab-content">
-        <h3 style="margin-top:0;">Коллекция NFT</h3>
+        <h2 class="section-title">Твоя коллекция</h2>
         <div class="nft-grid">
-            <div class="nft-card">❄️ Снежинка Удачи<br><span style="font-size:12px; color:var(--primary);">Скоро</span></div>
-            <div class="nft-card">🧊 Ледяной Щит<br><span style="font-size:12px; color:var(--primary);">Скоро</span></div>
+            <div class="nft-card">
+                <span class="nft-icon">❄️</span>
+                <p style="font-weight: 800; margin: 0;">Ледяное ядро</p>
+                <span style="font-size: 11px; color: var(--primary); font-weight: bold;">ЗАШИФРОВАНО</span>
+            </div>
+            <div class="nft-card">
+                <span class="nft-icon">🧊</span>
+                <p style="font-weight: 800; margin: 0;">Ледяная эгида</p>
+                <span style="font-size: 11px; color: var(--primary); font-weight: bold;">ЗАШИФРОВАНО</span>
+            </div>
         </div>
     </div>
 
-    <div class="bottom-nav">
+    <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchTab('home')">
-            <span class="nav-icon">🏠</span>Главная
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Главная</span>
         </div>
         <div class="nav-item" onclick="switchTab('tasks')">
-            <span class="nav-icon">📋</span>Задания
+            <span class="nav-icon">⚡</span>
+            <span class="nav-label">Задания</span>
         </div>
         <div class="nav-item" onclick="switchTab('shop')">
-            <span class="nav-icon">🛒</span>Магазин
+            <span class="nav-icon">💎</span>
+            <span class="nav-label">Магазин</span>
         </div>
-        <div class="nav-item" onclick="switchTab('nfts')">
-            <span class="nav-icon">💎</span>NFT
+        <div class="nav-item" onclick="switchTab('leaderboard')">
+            <span class="nav-icon">🏅</span>
+            <span class="nav-label">Топ</span>
         </div>
-    </div>
+    </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        const SERVER_URL = "https://ТВОЙ-САЙТ.up.railway.app"; 
+        tg.enableClosingConfirmation();
+        tg.headerColor = '#0a0c14';
+
+        const SERVER_URL = "https://snowy-snc-app-production.up.railway.app"; 
         let username = tg.initDataUnsafe?.user?.username || `user_${tg.initDataUnsafe?.user?.id || 'unknown'}`;
         username = username.toLowerCase();
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => {
-                if(el.getAttribute('onclick').includes(tabId)) {
+                const clickAttr = el.getAttribute('onclick');
+                if(clickAttr && clickAttr.includes(tabId)) {
                     el.classList.add('active');
                 } else {
                     el.classList.remove('active');
@@ -164,25 +326,30 @@
             });
             document.getElementById(`tab-${tabId}`).classList.add('active');
             if(tabId === 'leaderboard') loadLeaderboard();
+            if(tabId === 'tasks') loadUserData();
+            tg.HapticFeedback.impactOccurred('light');
         }
 
         async function loadUserData() {
             try {
                 const response = await fetch(`${SERVER_URL}/api/user/${username}`);
                 const data = await response.json();
-                document.getElementById("user-balance").innerText = data.balance;
+                document.getElementById("user-balance").innerText = data.balance.toLocaleString();
+                
                 const tasksHtml = data.tasks.map(t => `
                     <div class="card task-row">
                         <div class="task-info">
-                            <h4>${t.title}</h4>
-                            <div class="task-reward">+${t.reward} SNC</div>
+                            <h4 style="margin:0; font-size:15px;">${t.title}</h4>
+                            <div class="task-reward">+${t.reward} <span class="snow-anim">❄️</span></div>
                         </div>
-                        <div class="task-status">${t.done ? '✅ Выполнено' : 'В процессе'}</div>
+                        <div class="status-badge" style="${t.done ? 'color:#00ff88; background:rgba(0,255,136,0.1);' : ''}">
+                            ${t.done ? 'Выполнено' : 'Доступно'}
+                        </div>
                     </div>
                 `).join('');
-                document.getElementById("tasks-list").innerHTML = tasksHtml || "Нет заданий";
+                document.getElementById("tasks-list").innerHTML = tasksHtml || "Задания не найдены.";
             } catch (e) {
-                document.getElementById("user-balance").innerText = "Ошибка";
+                document.getElementById("user-balance").innerText = "ОШИБКА";
             }
         }
 
@@ -196,13 +363,13 @@
                         <div class="leader-row">
                             <div class="rank ${rankClass}">#${index + 1}</div>
                             <div class="username">@${user.username}</div>
-                            <div class="score">${user.balance}</div>
+                            <div class="score">${user.balance.toLocaleString()}</div>
                         </div>
                     `;
                 }).join('');
-                document.getElementById("leaderboard-list").innerHTML = boardHtml || "Пусто";
+                document.getElementById("leaderboard-list").innerHTML = boardHtml || "Данные недоступны.";
             } catch (e) {
-                document.getElementById("leaderboard-list").innerHTML = "Ошибка";
+                document.getElementById("leaderboard-list").innerHTML = "Системная ошибка";
             }
         }
 
@@ -210,25 +377,28 @@
             const target = document.getElementById("target").value;
             const amount = document.getElementById("amount").value;
             if (!target || !amount) {
-                tg.showAlert("Заполните все поля");
+                tg.showAlert("Требования транзакции не выполнены.");
                 return;
             }
+            tg.HapticFeedback.notificationOccurred('success');
             tg.sendData(JSON.stringify({ type: "transfer", target: target, amount: amount }));
         }
 
         async function buySNC(amountSnc, amountStars) {
+            tg.HapticFeedback.impactOccurred('medium');
             try {
                 const response = await fetch(`${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`);
                 const data = await response.json();
                 if (data.invoice_url) {
                     tg.openInvoice(data.invoice_url, function(status) {
                         if (status === 'paid') {
+                            tg.HapticFeedback.notificationOccurred('success');
                             setTimeout(loadUserData, 2000);
                         }
                     });
                 }
             } catch (e) {
-                tg.showAlert("Ошибка создания платежа");
+                tg.showAlert("Ошибка платежной ссылки.");
             }
         }
 
