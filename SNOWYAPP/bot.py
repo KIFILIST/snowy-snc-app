@@ -10,12 +10,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import Command
 from aiogram.types import (
-    ReplyKeyboardMarkup, 
-    KeyboardButton, 
-    WebAppInfo, 
-    LabeledPrice, 
-    PreCheckoutQuery, 
-    InlineKeyboardMarkup, 
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+    WebAppInfo,
+    LabeledPrice,
+    PreCheckoutQuery,
+    InlineKeyboardMarkup,
     InlineKeyboardButton
 )
 
@@ -55,7 +55,7 @@ async def init_db():
     async with pool.acquire() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                username TEXT PRIMARY KEY, 
+                username TEXT PRIMARY KEY,
                 balance INTEGER DEFAULT 0
             );
             CREATE TABLE IF NOT EXISTS inventory (
@@ -103,7 +103,6 @@ async def api_get_user(username: str):
         async with pool.acquire() as conn:
             inv_rows = await conn.fetch("SELECT nft_id FROM inventory WHERE username = $1", username.lower())
             inventory = [r['nft_id'] for r in inv_rows]
-        
         user_data = {
             "username": username,
             "balance": balance,
@@ -126,18 +125,15 @@ async def api_buy_nft(username: str, nft_id: str, price: int):
         pool = await get_db()
         async with pool.acquire() as conn:
             user_row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username.lower())
-            
             if not user_row or user_row['balance'] < price:
                 raise HTTPException(status_code=400, detail="Insufficient SNC balance")
-            
             async with conn.transaction():
                 await conn.execute("UPDATE users SET balance = balance - $1 WHERE username = $2", price, username.lower())
                 await conn.execute("""
-                    INSERT INTO inventory (username, nft_id) 
-                    VALUES ($1, $2) 
+                    INSERT INTO inventory (username, nft_id)
+                    VALUES ($1, $2)
                     ON CONFLICT (username, nft_id) DO NOTHING
                 """, username.lower(), nft_id)
-            
             return {"status": "success", "nft_id": nft_id}
     except Exception as e:
         print(f"NFT Purchase Error: {e}")
@@ -175,7 +171,6 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
 async def cmd_start(message: types.Message):
     username = get_username(message.from_user)
     balance = await check_user(username)
-    
     if message.from_user.id in ADMIN_IDS:
         msg = (
             "👑 *SNC ELITE ADMINISTRATION*\n\n"
@@ -201,7 +196,6 @@ async def cmd_mynfts(message: types.Message):
     pool = await get_db()
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT nft_id FROM inventory WHERE username = $1", username.lower())
-    
     if rows:
         nfts = ", ".join([r['nft_id'] for r in rows])
         await message.answer(f"🖼️ Артефакты *{username}*:\n{nfts}", parse_mode="Markdown")
@@ -225,25 +219,21 @@ async def handle_private_logic(message: types.Message):
     user_id = message.from_user.id
     username = get_username(message.from_user)
     await check_user(username)
-    
     if user_id in ADMIN_IDS:
         admin_pattern = r"^@?(\w+)\s+([+-]?\d+)$"
         match = re.match(admin_pattern, message.text or "")
         if match:
             target = match.group(1).lower()
             amount = int(match.group(2))
-            
             pool = await get_db()
             async with pool.acquire() as conn:
                 exists = await conn.fetchrow("SELECT username FROM users WHERE username = $1", target)
-            
             if exists:
                 new_bal = await update_balance(target, amount)
                 await message.answer(f"✅ Успешно.\n@{target}: {new_bal} SNC")
             else:
                 await message.answer(f"❌ Объект @{target} не найден в базе.")
             return
-
     current_balance = await check_user(username)
     await message.answer(f"❄️ Ваш баланс: {current_balance} SNC", reply_markup=get_keyboard())
 
@@ -256,7 +246,6 @@ async def success_payment_handler(message: types.Message):
     pay_data = json.loads(message.successful_payment.invoice_payload)
     target_user = pay_data['user']
     add_amount = pay_data['amount']
-    
     new_total = await update_balance(target_user, add_amount)
     await message.answer(
         f"✅ Платеж подтвержден!\n"
@@ -264,17 +253,22 @@ async def success_payment_handler(message: types.Message):
         f"Текущий баланс: {new_total} SNC"
     )
 
+async def run_polling():
+    while True:
+        try:
+            await bot.delete_webhook(drop_pending_updates=True)
+            await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+        except Exception as e:
+            print(f"Polling error: {e}, restarting in 5s...")
+            await asyncio.sleep(5)
+
 async def start_services():
     await init_db()
-    
-    await bot.delete_webhook(drop_pending_updates=True)
-    
     app_port = int(os.getenv("PORT", 8080))
     api_config = uvicorn.Config(app, host="0.0.0.0", port=app_port, log_level="info")
     api_server = uvicorn.Server(api_config)
-    
     await asyncio.gather(
-        dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types()),
+        run_polling(),
         api_server.serve()
     )
 
