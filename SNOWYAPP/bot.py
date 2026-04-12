@@ -17,6 +17,7 @@ from aiogram.types import (
     WebAppInfo,
     LabeledPrice,
     PreCheckoutQuery,
+    ReplyKeyboardRemove,
 )
 
 load_dotenv()
@@ -281,9 +282,9 @@ def get_username(user: types.User):
 
 def get_keyboard():
     buttons = [
-        [KeyboardButton(text="🚀 Ворваться в Штаб", web_app=WebAppInfo(url=WEBAPP_URL))]
+        [KeyboardButton(text="", web_app=WebAppInfo(url=WEBAPP_URL))]
     ]
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
+    return ReplyKeyboardRemove()
 
 @app.get("/api/user/{username}")
 async def api_get_user(username: str):
