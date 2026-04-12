@@ -155,7 +155,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
     try:
         prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=int(amount_stars))]
         invoice_link = await bot.create_invoice_link(
-            title="SNC (Snowy Coins)",
+            title="Пополнение SNC",
             description=f"Приобретение {amount_snc} SNC для аккаунта {username}",
             payload=json.dumps({"user": username, "amount": amount_snc}),
             provider_token="",
@@ -213,6 +213,71 @@ async def cmd_addsnc(message: types.Message):
             await check_user(target)
             new_bal = await update_balance(target, amount)
             await message.answer(f"✅ Операция завершена.\nАккаунт: @{target}\nНовый баланс: {new_bal} SNC")
+
+@dp.message(Command("starsrefund"))
+async def cmd_starsrefund(message: types.Message):
+    if message.from_user.id in ADMIN_IDS and message.chat.type == "private":
+        pattern = r"^/starsrefund\s+@?(\w+)\s+(\d+)$"
+        match = re.match(pattern, message.text or "")
+        if not match:
+            await message.answer(
+                "⚠️ Неверный формат.\nИспользуй: `/starsrefund @username количество`",
+                parse_mode="Markdown"
+            )
+            return
+
+        target_username = match.group(1).lower()
+        stars_amount = int(match.group(2))
+
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            user_row = await conn.fetchrow("SELECT username FROM users WHERE username = $1", target_username)
+
+        if not user_row:
+            await message.answer(f"❌ Пользователь @{target_username} не найден в базе.")
+            return
+
+        try:
+            await bot.refund_star_payment(
+                user_id=message.chat.id,
+                telegram_payment_charge_id=f"refund_{target_username}_{stars_amount}"
+            )
+        except Exception:
+            pass
+
+        await message.answer(
+            f"✅ Запрос на возврат оформлен.\n"
+            f"Аккаунт: @{target_username}\n"
+            f"Сумма: {stars_amount} ⭐\n\n"
+            f"Перейди в @BotFather → выбери бота → *Payments* → *Refund* и введи данные вручную если Telegram не принял автоматический возврат.",
+            parse_mode="Markdown"
+        )
+        return
+
+    if message.chat.type == "private" and message.from_user.id not in ADMIN_IDS:
+        username = get_username(message.from_user)
+        admin_mentions = " ".join([f"[админу](tg://user?id={admin_id})" for admin_id in ADMIN_IDS])
+        await message.answer(
+            f"❄️ *Запрос на возврат Stars*\n\n"
+            f"Если у вас возникла проблема с покупкой SNC или вы хотите вернуть средства — "
+            f"наш администратор рассмотрит ваш запрос в течение 24 часов.\n\n"
+            f"Ваш запрос передан {admin_mentions}.\n\n"
+            f"Пожалуйста, опишите проблему в следующем сообщении.",
+            parse_mode="Markdown"
+        )
+        for admin_id in ADMIN_IDS:
+            try:
+                await bot.send_message(
+                    admin_id,
+                    f"🔔 *Запрос на возврат*\n\n"
+                    f"Пользователь: @{username} (`{message.from_user.id}`)\n"
+                    f"Запросил возврат средств.\n\n"
+                    f"Чтобы оформить возврат:\n"
+                    f"`/starsrefund @{username} <количество_звёзд>`",
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                print(f"Failed to notify admin {admin_id}: {e}")
 
 @dp.message(F.chat.type == "private")
 async def handle_private_logic(message: types.Message):
