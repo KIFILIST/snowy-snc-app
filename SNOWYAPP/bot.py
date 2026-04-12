@@ -155,7 +155,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
     try:
         prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=int(amount_stars))]
         invoice_link = await bot.create_invoice_link(
-            title="Пополнение SNC",
+            title="Набор монеток",
             description=f"Приобретение {amount_snc} SNC для аккаунта {username}",
             payload=json.dumps({"user": username, "amount": amount_snc}),
             provider_token="",
