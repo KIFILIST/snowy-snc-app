@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Snowy SNC Elite</title>
+    <title>Snowy SNC</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -283,14 +283,14 @@
     </div>
 
     <div id="tab-shop" class="container tab-content">
-        <h2 class="section-title">Биржа Stars</h2>
+        <h2 class="section-title">Биржа</h2>
         <div class="shop-grid">
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info"><h4>Пакет Ветерана</h4><p>5,000 SNC</p></div>
-                    <div class="shop-price"><span>⭐</span> 200</div>
+                    <div class="shop-info"><h4>Пакет Новичка</h4><p>200 SNC</p></div>
+                    <div class="shop-price"><span>⭐</span> 50</div>
                 </div>
-                <button class="shop-btn" onclick="buySNC(5000, 200)">Купить</button>
+                <button class="shop-btn" onclick="buySNC(200, 50)">Купить</button>
             </div>
         </div>
 
@@ -305,10 +305,17 @@
             </div>
             <div class="shop-card">
                 <div class="shop-header">
-                    <div class="shop-info"><h4>Корона Смерти</h4><p>Легенда. Уникальная аура.</p></div>
-                    <div class="shop-price snc">❄️ 50,000</div>
+                    <div class="shop-info"><h4>Снежинка</h4><p>Легенда о первой снежинке.</p></div>
+                    <div class="shop-price snc">❄️ 15,000</div>
                 </div>
-                <button class="shop-btn" onclick="buyNFT('crown', 50000, '👑', 'Корона Смерти')">Приобрести</button>
+                <button class="shop-btn" onclick="buyNFT('snow', 15000, '❄️', 'Снежинка')">Приобрести</button>
+            </div>
+             <div class="shop-card">
+                <div class="shop-header">
+                    <div class="shop-info"><h4>Ледянящая Картина</h4><p>Замораживающий вид.</p></div>
+                    <div class="shop-price snc">❄️ 20,000</div>
+                </div>
+                <button class="shop-btn" onclick="buyNFT('picture1', 20000, '🖼️', 'Ледянящая Картина')">Приобрести</button>
             </div>
         </div>
     </div>
@@ -362,7 +369,8 @@
 
         const NFT_DATA = {
             'phoenix': { icon: '🔥', title: 'Ледяной Феникс' },
-            'crown': { icon: '👑', title: 'Корона Смерти' }
+            'snow': { icon: '❄️', title: 'Снежинка' },
+            'picture1': { icon: '🖼️', title: 'Ледянящая Картина'}
         };
 
         function switchTab(tabId) {
