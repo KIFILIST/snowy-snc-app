@@ -142,7 +142,6 @@
             transition: 0.2s;
         }
         .rank { font-weight: 800; width: 45px; font-size: 18px; color: var(--text-muted); }
-        .rank-1 { color: #ffcc00; font-size: 22px; }
         .username { flex-grow: 1; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
         .score { font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
 
@@ -156,10 +155,14 @@
             flex-direction: column;
             gap: 20px;
         }
+        .shop-card.featured {
+            border-color: rgba(0, 242, 255, 0.3);
+            background: linear-gradient(145deg, rgba(0, 242, 255, 0.07) 0%, rgba(255,255,255,0.01) 100%);
+        }
         .shop-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .shop-info h4 { margin: 0; font-size: 20px; font-weight: 800; }
         .shop-info p { margin: 4px 0 0; font-size: 14px; color: var(--text-muted); }
-        .shop-price { 
+        .shop-price {
             background: rgba(255, 204, 0, 0.1);
             color: #ffcc00;
             padding: 8px 14px;
@@ -169,32 +172,96 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
         }
         .shop-price.snc { color: var(--primary); background: rgba(0, 242, 255, 0.1); }
         .shop-btn { background: #fff; color: #000; padding: 16px; }
 
-        .task-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-        }
-        .task-reward { 
-            color: var(--primary); 
-            font-weight: 800; 
-            font-size: 13px; 
-            margin-top: 6px;
-            background: rgba(0, 242, 255, 0.1);
-            padding: 4px 8px;
+        .badge-popular {
+            display: inline-block;
+            background: rgba(0, 242, 255, 0.15);
+            color: var(--primary);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
             border-radius: 8px;
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .quest-card {
+            background: var(--surface);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: 0.2s;
+        }
+        .quest-card.done { border-color: rgba(0, 255, 136, 0.2); }
+        .quest-card.claimed { opacity: 0.5; }
+        .quest-inner { padding: 20px; }
+        .quest-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .quest-title { font-size: 15px; font-weight: 800; margin: 0 0 4px; }
+        .quest-desc { font-size: 13px; color: var(--text-muted); margin: 0; }
+        .quest-reward-badge {
+            background: rgba(0, 242, 255, 0.1);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 800;
+            padding: 6px 12px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+        .quest-reward-badge.golden { background: rgba(255,204,0,0.1); color: #ffcc00; }
+        .quest-progress-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.07);
+            border-radius: 0 0 24px 24px;
+            overflow: hidden;
+        }
+        .quest-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .quest-progress-fill.done { background: var(--success); }
+        .claim-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            border-radius: 16px;
+            border: none;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            color: white;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .claim-btn:active { transform: scale(0.97); }
+        .claim-btn.daily-claim {
+            background: linear-gradient(135deg, #ffcc00, #ff9500);
+            color: #000;
+        }
+        .done-badge {
+            font-size: 12px;
+            font-weight: 800;
+            padding: 6px 14px;
+            border-radius: 12px;
+            background: rgba(0,255,136,0.1);
+            color: var(--success);
+            margin-top: 12px;
             display: inline-block;
         }
-        .status-badge { 
-            font-size: 12px; 
-            font-weight: 800; 
-            padding: 8px 16px; 
-            border-radius: 14px; 
-            background: rgba(255,255,255,0.05);
+
+        .daily-reset {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
         }
 
         .nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -208,6 +275,21 @@
             overflow: hidden;
         }
         .nft-icon { font-size: 44px; margin-bottom: 12px; display: block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
+
+        .rarity-tag {
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .rarity-common { background: rgba(142,142,147,0.15); color: #8e8e93; }
+        .rarity-rare { background: rgba(0,122,255,0.15); color: #007aff; }
+        .rarity-epic { background: rgba(112,0,255,0.15); color: #a855f7; }
+        .rarity-legend { background: rgba(255,204,0,0.15); color: #ffcc00; }
 
         .bottom-nav {
             position: fixed;
@@ -276,61 +358,156 @@
     </div>
 
     <div id="tab-tasks" class="container tab-content">
-        <h2 class="section-title">Задания штаба</h2>
+        <h2 class="section-title">Ежедневные</h2>
+        <div class="daily-reset" id="daily-reset-label">Сбрасываются в полночь</div>
+        <div id="daily-list"></div>
+
+        <h2 class="section-title">Квесты штаба</h2>
         <div id="tasks-list">
-            <div class="card" style="text-align: center; color: var(--text-muted);">Инициализация...</div>
+            <div class="card" style="text-align:center;color:var(--text-muted);">Инициализация...</div>
         </div>
     </div>
 
     <div id="tab-shop" class="container tab-content">
-        <h2 class="section-title">Биржа</h2>
-        <div class="shop-grid">
-            <div class="shop-card">
-                <div class="shop-header">
-                    <div class="shop-info"><h4>Пакет Новичка</h4><p>200 SNC</p></div>
-                    <div class="shop-price"><span>⭐</span> 50</div>
-                </div>
-                <button class="shop-btn" onclick="buySNC(200, 50)">Купить</button>
+        <h2 class="section-title">Биржа Stars</h2>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Стартовый набор</h4><p>100 SNC — для знакомства</p></div>
+                <div class="shop-price"><span>⭐</span> 15</div>
             </div>
+            <button class="shop-btn" onclick="buySNC(100, 15)">Купить</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Пакет Новичка</h4><p>300 SNC</p></div>
+                <div class="shop-price"><span>⭐</span> 40</div>
+            </div>
+            <button class="shop-btn" onclick="buySNC(300, 40)">Купить</button>
+        </div>
+
+        <div class="shop-card featured">
+            <div class="shop-header">
+                <div class="shop-info">
+                    <h4>Пакет Бойца</h4>
+                    <p>800 SNC<br><span class="badge-popular">Популярный</span></p>
+                </div>
+                <div class="shop-price"><span>⭐</span> 99</div>
+            </div>
+            <button class="shop-btn" onclick="buySNC(800, 99)">Купить</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Пакет Ветерана</h4><p>2,000 SNC</p></div>
+                <div class="shop-price"><span>⭐</span> 230</div>
+            </div>
+            <button class="shop-btn" onclick="buySNC(2000, 230)">Купить</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Пакет Командира</h4><p>5,000 SNC</p></div>
+                <div class="shop-price"><span>⭐</span> 550</div>
+            </div>
+            <button class="shop-btn" onclick="buySNC(5000, 550)">Купить</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Пакет Генерала</h4><p>12,000 SNC</p></div>
+                <div class="shop-price"><span>⭐</span> 1200</div>
+            </div>
+            <button class="shop-btn" onclick="buySNC(12000, 1200)">Купить</button>
         </div>
 
         <h2 class="section-title">Рынок Артефактов (за SNC)</h2>
-        <div class="shop-grid" id="nft-market">
-            <div class="shop-card">
-                <div class="shop-header">
-                    <div class="shop-info"><h4>Ледяной Феникс</h4><p>Редкий. +15% статуса.</p></div>
-                    <div class="shop-price snc">❄️ 25,000</div>
-                </div>
-                <button class="shop-btn" onclick="buyNFT('phoenix', 25000, '🔥', 'Ледяной Феникс')">Приобрести</button>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Снежный Жетон</h4><p>Обычный. Знак участника.</p></div>
+                <div class="shop-price snc">❄️ 500</div>
             </div>
-            <div class="shop-card">
-                <div class="shop-header">
-                    <div class="shop-info"><h4>Снежинка</h4><p>Легенда о первой снежинке.</p></div>
-                    <div class="shop-price snc">❄️ 15,000</div>
-                </div>
-                <button class="shop-btn" onclick="buyNFT('snow', 15000, '❄️', 'Снежинка')">Приобрести</button>
+            <button class="shop-btn" onclick="buyNFT('token', 500, '🪙', 'Снежный Жетон')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Ледяной Щит</h4><p>Обычный. Защитник штаба.</p></div>
+                <div class="shop-price snc">❄️ 1,200</div>
             </div>
-             <div class="shop-card">
-                <div class="shop-header">
-                    <div class="shop-info"><h4>Ледянящая Картина</h4><p>Замораживающий вид.</p></div>
-                    <div class="shop-price snc">❄️ 20,000</div>
-                </div>
-                <button class="shop-btn" onclick="buyNFT('picture1', 20000, '🖼️', 'Ледянящая Картина')">Приобрести</button>
+            <button class="shop-btn" onclick="buyNFT('shield', 1200, '🛡️', 'Ледяной Щит')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Снежинка</h4><p>Редкий. Легенда о первой снежинке.</p></div>
+                <div class="shop-price snc">❄️ 3,500</div>
             </div>
+            <button class="shop-btn" onclick="buyNFT('snow', 3500, '❄️', 'Снежинка')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Ледянящая Картина</h4><p>Редкий. Замораживающий вид.</p></div>
+                <div class="shop-price snc">❄️ 5,000</div>
+            </div>
+            <button class="shop-btn" onclick="buyNFT('picture1', 5000, '🖼️', 'Ледянящая Картина')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Клинок Метели</h4><p>Редкий. Острее льда.</p></div>
+                <div class="shop-price snc">❄️ 7,000</div>
+            </div>
+            <button class="shop-btn" onclick="buyNFT('blade', 7000, '⚔️', 'Клинок Метели')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Маска Снежного Волка</h4><p>Эпик. Страх врагов.</p></div>
+                <div class="shop-price snc">❄️ 10,000</div>
+            </div>
+            <button class="shop-btn" onclick="buyNFT('wolfmask', 10000, '🐺', 'Маска Снежного Волка')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Ледяной Феникс</h4><p>Эпик. +15% статуса.</p></div>
+                <div class="shop-price snc">❄️ 15,000</div>
+            </div>
+            <button class="shop-btn" onclick="buyNFT('phoenix', 15000, '🔥', 'Ледяной Феникс')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Трон Вечной Зимы</h4><p>Легенда. Символ власти.</p></div>
+                <div class="shop-price snc">❄️ 25,000</div>
+            </div>
+            <button class="shop-btn" onclick="buyNFT('throne', 25000, '🪑', 'Трон Вечной Зимы')">Приобрести</button>
+        </div>
+
+        <div class="shop-card">
+            <div class="shop-header">
+                <div class="shop-info"><h4>Корона Смерти</h4><p>Легенда. Уникальная аура.</p></div>
+                <div class="shop-price snc">❄️ 50,000</div>
+            </div>
+            <button class="shop-btn" onclick="buyNFT('crown', 50000, '👑', 'Корона Смерти')">Приобрести</button>
         </div>
     </div>
 
     <div id="tab-leaderboard" class="container tab-content">
         <h2 class="section-title">Мировая Элита</h2>
         <div class="card" id="leaderboard-list">
-            <div style="text-align: center; color: var(--text-muted);">Синхронизация данных...</div>
+            <div style="text-align:center;color:var(--text-muted);">Синхронизация данных...</div>
         </div>
     </div>
 
     <div id="tab-nfts" class="container tab-content">
         <h2 class="section-title">Артефакты в наличии</h2>
         <div class="nft-grid" id="my-nfts-grid">
-            <div class="card" style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">
+            <div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">
                 У вас пока нет приобретенных артефактов
             </div>
         </div>
@@ -366,11 +543,26 @@
         let username = (tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`).toLowerCase();
         let currentSNC = 0;
         let ownedNFTs = [];
+        let lastTasks = [];
+        let lastDailyTasks = [];
 
         const NFT_DATA = {
-            'phoenix': { icon: '🔥', title: 'Ледяной Феникс' },
-            'snow': { icon: '❄️', title: 'Снежинка' },
-            'picture1': { icon: '🖼️', title: 'Ледянящая Картина'}
+            'token':    { icon: '🪙', title: 'Снежный Жетон',        rarity: 'common' },
+            'shield':   { icon: '🛡️', title: 'Ледяной Щит',          rarity: 'common' },
+            'snow':     { icon: '❄️', title: 'Снежинка',              rarity: 'rare' },
+            'picture1': { icon: '🖼️', title: 'Ледянящая Картина',    rarity: 'rare' },
+            'blade':    { icon: '⚔️', title: 'Клинок Метели',         rarity: 'rare' },
+            'wolfmask': { icon: '🐺', title: 'Маска Снежного Волка',  rarity: 'epic' },
+            'phoenix':  { icon: '🔥', title: 'Ледяной Феникс',        rarity: 'epic' },
+            'throne':   { icon: '🪑', title: 'Трон Вечной Зимы',      rarity: 'legend' },
+            'crown':    { icon: '👑', title: 'Корона Смерти',          rarity: 'legend' }
+        };
+
+        const RARITY_LABEL = {
+            'common': 'Обычный',
+            'rare': 'Редкий',
+            'epic': 'Эпик',
+            'legend': 'Легенда'
         };
 
         function switchTab(tabId) {
@@ -378,9 +570,11 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             document.getElementById('nav-' + tabId).classList.add('active');
-            if (tabId === 'leaderboard') loadLeaderboard();
+            if (tabId === 'leaderboard') { loadLeaderboard(); completeDaily('daily_leaderboard'); }
             if (tabId === 'tasks' || tabId === 'home') loadUserData();
-            if (tabId === 'nfts') renderInventory();
+            if (tabId === 'nfts') { renderInventory(); completeDaily('daily_nfts'); }
+            if (tabId === 'shop') completeDaily('daily_shop');
+            if (tabId === 'home') completeDaily('daily_login');
             tg.HapticFeedback.impactOccurred('medium');
         }
 
@@ -394,24 +588,109 @@
                 const data = await response.json();
                 currentSNC = data.balance;
                 ownedNFTs = data.inventory || [];
+                lastTasks = data.tasks || [];
+                lastDailyTasks = data.daily_tasks || [];
                 document.getElementById("user-balance").innerText = data.balance.toLocaleString();
-                const tasksHtml = data.tasks.map(t => `
-                    <div class="card task-row">
-                        <div class="task-info">
-                            <h4 style="margin:0; font-size:15px;">${t.title}</h4>
-                            <div class="task-reward">+${t.reward} SNC</div>
-                        </div>
-                        <div class="status-badge" style="${t.done ? 'color:var(--success); background:rgba(0,255,136,0.1);' : ''}">
-                            ${t.done ? 'Завершено' : 'В работе'}
-                        </div>
-                    </div>
-                `).join('');
-                document.getElementById("tasks-list").innerHTML = tasksHtml || "Нет доступных миссий.";
+                renderTasks();
+                renderDailyTasks();
             } catch (e) {
                 console.error("Balance error:", e);
                 document.getElementById("user-balance").innerText = "---";
                 document.getElementById("tasks-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Ошибка подключения к серверу</div>';
             }
+        }
+
+        function renderTasks() {
+            if (!lastTasks.length) {
+                document.getElementById("tasks-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Нет доступных квестов</div>';
+                return;
+            }
+            document.getElementById("tasks-list").innerHTML = lastTasks.map(t => {
+                const pct = Math.min(100, Math.round((t.progress / t.required) * 100));
+                let actionHtml = '';
+                if (t.claimed) {
+                    actionHtml = '<div class="done-badge">✓ Получено</div>';
+                } else if (t.done) {
+                    actionHtml = `<button class="claim-btn" onclick="claimQuest('${t.id}')">Забрать +${t.reward} SNC</button>`;
+                }
+                return `
+                    <div class="quest-card ${t.claimed ? 'claimed' : (t.done ? 'done' : '')}">
+                        <div class="quest-inner">
+                            <div class="quest-top">
+                                <div>
+                                    <p class="quest-title">${t.title}</p>
+                                    <p class="quest-desc">${t.description}</p>
+                                    ${actionHtml}
+                                </div>
+                                <div class="quest-reward-badge">+${t.reward.toLocaleString()} SNC</div>
+                            </div>
+                            ${!t.claimed ? `<div style="margin-top:12px;font-size:12px;color:var(--text-muted);font-weight:600;">${t.progress} / ${t.required}</div>` : ''}
+                        </div>
+                        <div class="quest-progress-bar">
+                            <div class="quest-progress-fill ${t.done ? 'done' : ''}" style="width:${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderDailyTasks() {
+            if (!lastDailyTasks.length) {
+                document.getElementById("daily-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Ежедневные задания недоступны</div>';
+                return;
+            }
+            document.getElementById("daily-list").innerHTML = lastDailyTasks.map(t => {
+                let actionHtml = '';
+                if (t.done) {
+                    actionHtml = '<div class="done-badge">✓ Выполнено</div>';
+                }
+                return `
+                    <div class="quest-card ${t.done ? 'done' : ''}">
+                        <div class="quest-inner">
+                            <div class="quest-top">
+                                <div>
+                                    <p class="quest-title">${t.title}</p>
+                                    <p class="quest-desc">${t.description}</p>
+                                    ${actionHtml}
+                                </div>
+                                <div class="quest-reward-badge golden">+${t.reward} SNC</div>
+                            </div>
+                        </div>
+                        <div class="quest-progress-bar">
+                            <div class="quest-progress-fill ${t.done ? 'done' : ''}" style="width:${t.done ? 100 : 0}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function claimQuest(questId) {
+            try {
+                const response = await fetch(`${SERVER_URL}/api/claim_quest/${username}/${questId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    tg.HapticFeedback.notificationOccurred('success');
+                    tg.showAlert(`✅ Получено ${data.reward} SNC!`);
+                    loadUserData();
+                } else {
+                    const err = await response.json();
+                    tg.showAlert("Ошибка: " + (err.detail || "Не удалось забрать награду"));
+                }
+            } catch (e) {
+                tg.showAlert("Ошибка подключения.");
+            }
+        }
+
+        async function completeDaily(questId) {
+            try {
+                await fetch(`${SERVER_URL}/api/complete_daily/${username}/${questId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (e) {}
         }
 
         async function loadLeaderboard() {
@@ -435,7 +714,6 @@
                 }).join('');
                 listEl.innerHTML = boardHtml || "Список пуст.";
             } catch (e) {
-                console.error("Leaderboard error:", e);
                 document.getElementById("leaderboard-list").innerHTML = '<div style="text-align:center;color:var(--text-muted);">Ошибка подключения к серверу</div>';
             }
         }
@@ -478,19 +756,19 @@
                 return;
             }
             grid.innerHTML = ownedNFTs.map(nftId => {
-                const info = NFT_DATA[nftId] || { icon: '❄️', title: 'Артефакт' };
+                const info = NFT_DATA[nftId] || { icon: '❄️', title: 'Артефакт', rarity: 'common' };
                 return `
                     <div class="nft-card">
                         <div class="owned-badge">Owned</div>
                         <span class="nft-icon">${info.icon}</span>
                         <p style="font-weight:800;margin:0;font-size:14px;">${info.title}</p>
-                        <span style="font-size:10px;color:var(--primary);font-weight:800;">ELITE</span>
+                        <span class="rarity-tag rarity-${info.rarity}">${RARITY_LABEL[info.rarity]}</span>
                     </div>
                 `;
             }).join('');
         }
 
-        function sendTransfer() {
+        async function sendTransfer() {
             const target = document.getElementById("target").value.trim().replace('@', '');
             const amount = parseInt(document.getElementById("amount").value);
             if (!target || isNaN(amount) || amount <= 0) {
@@ -501,9 +779,30 @@
                 tg.showAlert("Недостаточно SNC для перевода.");
                 return;
             }
-            tg.HapticFeedback.notificationOccurred('warning');
-            tg.sendData(JSON.stringify({ type: "transfer", target: target.toLowerCase(), amount: amount }));
-            tg.close();
+            tg.showConfirm(`Отправить ${amount.toLocaleString()} SNC пользователю @${target}?`, async (confirmed) => {
+                if (confirmed) {
+                    tg.HapticFeedback.impactOccurred('heavy');
+                    try {
+                        const response = await fetch(`${SERVER_URL}/api/transfer/${username}/${target}/${amount}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        if (response.ok) {
+                            tg.HapticFeedback.notificationOccurred('success');
+                            tg.showAlert(`✅ Переведено ${amount.toLocaleString()} SNC → @${target}`);
+                            document.getElementById("target").value = '';
+                            document.getElementById("amount").value = '';
+                            await completeDaily('daily_transfer');
+                            loadUserData();
+                        } else {
+                            const err = await response.json();
+                            tg.showAlert("Ошибка: " + (err.detail || "Перевод не выполнен"));
+                        }
+                    } catch (e) {
+                        tg.showAlert("Ошибка подключения к серверу.");
+                    }
+                }
+            });
         }
 
         async function buySNC(amountSnc, amountStars) {
@@ -526,11 +825,11 @@
                     });
                 }
             } catch (e) {
-                console.error("Payment error:", e);
                 tg.showAlert("Ошибка шлюза. Проверьте соединение.");
             }
         }
 
+        completeDaily('daily_login');
         loadUserData();
         setInterval(loadUserData, 15000);
     </script>
