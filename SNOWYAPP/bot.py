@@ -44,7 +44,7 @@ STATIC_QUESTS = [
         "id": "ref_1",
         "title": "Первый призыв",
         "description": "Пригласи 1 друга по реферальной ссылке",
-        "reward": 500,
+        "reward": 25,
         "type": "referral",
         "required": 1
     },
@@ -52,7 +52,7 @@ STATIC_QUESTS = [
         "id": "ref_3",
         "title": "Малый отряд",
         "description": "Пригласи 3 друзей по реферальной ссылке",
-        "reward": 1000,
+        "reward": 60,
         "type": "referral",
         "required": 3
     },
@@ -60,7 +60,7 @@ STATIC_QUESTS = [
         "id": "ref_5",
         "title": "Элитное звено",
         "description": "Пригласи 5 друзей по реферальной ссылке",
-        "reward": 2500,
+        "reward": 120,
         "type": "referral",
         "required": 5
     },
@@ -68,7 +68,7 @@ STATIC_QUESTS = [
         "id": "ref_10",
         "title": "Командир роты",
         "description": "Пригласи 10 друзей по реферальной ссылке",
-        "reward": 6000,
+        "reward": 300,
         "type": "referral",
         "required": 10
     },
@@ -76,7 +76,7 @@ STATIC_QUESTS = [
         "id": "first_transfer",
         "title": "Первый перевод",
         "description": "Отправь SNC другому пользователю",
-        "reward": 200,
+        "reward": 10,
         "type": "transfer",
         "required": 1
     },
@@ -84,14 +84,14 @@ STATIC_QUESTS = [
         "id": "first_nft",
         "title": "Коллекционер",
         "description": "Купи свой первый артефакт",
-        "reward": 300,
+        "reward": 150,
         "type": "nft",
         "required": 1
     },
     {
         "id": "first_purchase",
         "title": "Инвестор",
-        "description": "Пополни баланс через Биржу Stars",
+        "description": "Пополни баланс через Звездную Биржу.",
         "reward": 150,
         "type": "purchase",
         "required": 1
@@ -100,29 +100,29 @@ STATIC_QUESTS = [
         "id": "transfer_5",
         "title": "Казначей штаба",
         "description": "Сделай 5 переводов",
-        "reward": 800,
+        "reward": 40,
         "type": "transfer",
         "required": 5
     },
     {
         "id": "nft_3",
         "title": "Хранитель реликвий",
-        "description": "Собери 3 артефакта",
-        "reward": 1200,
+        "description": "Собери 5 артефактов",
+        "reward": 1000,
         "type": "nft",
-        "required": 3
+        "required": 5
     },
 ]
 
 DAILY_POOL = [
-    {"id": "daily_login",     "title": "Явка",             "description": "Открой приложение сегодня",              "reward": 10},
-    {"id": "daily_leaderboard","title": "Разведка",         "description": "Загляни в таблицу лидеров",             "reward": 10},
-    {"id": "daily_shop",      "title": "Обход рынка",       "description": "Открой вкладку Биржа",                  "reward": 10},
-    {"id": "daily_transfer",  "title": "Связной",           "description": "Отправь перевод кому-нибудь сегодня",   "reward": 30},
-    {"id": "daily_bot",       "title": "Сеанс связи",       "description": "Напиши боту любое сообщение",           "reward": 20},
-    {"id": "daily_nfts",      "title": "Инвентаризация",    "description": "Открой вкладку Мои NFT",                "reward": 10},
-    {"id": "daily_check_bal", "title": "Аудит счёта",       "description": "Проверь баланс на главной странице",    "reward": 15},
-    {"id": "daily_invite",    "title": "Вербовка",          "description": "Пригласи кого-нибудь в бот сегодня",    "reward": 50},
+    {"id": "daily_login",     "title": "Явка",             "description": "Открой приложение сегодня",              "reward": 2},
+    {"id": "daily_leaderboard","title": "Разведка",         "description": "Загляни в таблицу лидеров",             "reward": 1},
+    {"id": "daily_shop",      "title": "Обход рынка",       "description": "Открой вкладку Биржа",                  "reward": 1},
+    {"id": "daily_transfer",  "title": "Связной",           "description": "Отправь перевод кому-нибудь сегодня",   "reward": 10},
+    {"id": "daily_bot",       "title": "Сеанс связи",       "description": "Напиши боту любое сообщение",           "reward": 2},
+    {"id": "daily_nfts",      "title": "Инвентаризация",    "description": "Открой вкладку Мои NFT",                "reward": 1},
+    {"id": "daily_check_bal", "title": "Аудит счёта",       "description": "Проверь баланс на главной странице",    "reward": 1},
+    {"id": "daily_invite",    "title": "Вербовка",          "description": "Пригласи кого-нибудь в бот сегодня",    "reward": 10},
 ]
 
 async def get_db():
