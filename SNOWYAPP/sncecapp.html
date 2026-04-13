@@ -642,6 +642,10 @@
 
     <div class="page">
         <div class="header">
+            <div class="header-pill">
+                <div class="header-pill-dot"></div>
+                Snowy Network
+            </div>
             <div class="balance-label">Капитал</div>
             <div class="balance-value" id="user-balance">—</div>
             <div class="balance-ticker">SNC ❄️</div>
@@ -808,17 +812,17 @@
 
         document.getElementById('header-username').textContent = '@' + username;
 
-       const NFT_DATA = {
-    bear: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/bear.png', emoji: '🐻', title: 'Мишка снови', price: 5000, rarity: 'rare', gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
-    rose: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/rose.png', emoji: '🌹', title: 'Роза', price: 7700, rarity: 'rare', gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
-    heart: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/heart.png', emoji: '💝', title: 'Сердце', price: 6500, rarity: 'rare', gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
-    coin: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/coin.png', emoji: '🪙', title: 'Монета SNC', price: 10000, rarity: 'epic', gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
-    pepe: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/pepe.png', emoji: '🐸', title: 'Лягушка Пепе', price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
-    penguin: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/penguin.png', emoji: '🐧', title: 'Пингвин', price: 12500, rarity: 'epic', gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
-    snowflake: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/snowflake.png', emoji: '❄️', title: 'Снежинка', price: 4000, rarity: 'rare', gradient: 'linear-gradient(145deg,#0a1a22,#0d2030)', glow: '#a8e6ff' },
-    frozenheart: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/frozenheart.png', emoji: '💙', title: 'Замороженное сердце', price: 14000, rarity: 'epic', gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
-    icecube: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/icecube.png', emoji: '🧊', title: 'Кубик льда', price: 7500, rarity: 'rare', gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' }
-};
+        const NFT_DATA = {
+            bear:        { emoji: '🐻', title: 'Мишка снови',    price: 5000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
+            rose:        { emoji: '🌹', title: 'Роза',            price: 7700,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
+            heart:       { emoji: '💝', title: 'Сердце',          price: 6500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
+            coin:        { emoji: '🪙', title: 'Монета SNC',      price: 10000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
+            pepe:        { emoji: '🐸', title: 'Лягушка Пепе',   price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
+            penguin:     { emoji: '🐧', title: 'Пингвин',         price: 12500, rarity: 'epic',   gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
+            snowflake:   { emoji: '❄️', title: 'Снежинка',       price: 4000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1a22,#0d2030)', glow: '#a8e6ff' },
+            frozenheart: { emoji: '💙', title: 'Frozen Heart',    price: 14000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
+            icecube:     { emoji: '🧊', title: 'Кубик льда',      price: 7500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' },
+        };
 
         const RARITY_LABEL = { common: 'Обычный', rare: 'Редкий', epic: 'Эпик', legend: 'Легенда' };
 
@@ -891,107 +895,61 @@
             } catch (e) {}
         }
 
- function renderShopNFTs() {
-    const grid = document.getElementById('shop-nft-grid');
-
-    grid.innerHTML = Object.entries(NFT_DATA).map(([id, nft]) => {
-        const owned = !!ownedNFTs[id];
-        const stockLeft = nft.limited ? pepeStock : null;
-        const soldOut = nft.limited && stockLeft <= 0;
-        const stockPct = nft.limited ? Math.max(0, (stockLeft / nft.totalStock) * 100) : 0;
-
-        return `<div class="nft-shop-card ${owned ? 'owned' : ''} ${nft.limited ? 'limited' : ''}">
-            
-            <div class="nft-art" style="background:${nft.gradient}">
-                
-                <img src="${nft.img}" style="width:100%;height:100%;object-fit:cover"
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-
-                <div class="nft-art-fallback" style="display:none;filter:drop-shadow(0 0 20px ${nft.glow}80)">
-                    ${nft.emoji}
-                </div>
-
-                <div class="nft-art-shimmer"></div>
-
-                ${owned ? '<div class="nft-owned-tag">Owned</div>' : ''}
-                ${nft.limited && !owned ? '<div class="nft-limited-tag">⚡ Limited</div>' : ''}
-            </div>
-
-            ${nft.limited ? `
-                <div class="nft-stock-bar">
-                    <div class="nft-stock-fill" style="width:${stockPct}%"></div>
-                </div>
-            ` : ''}
-
-            <div class="nft-info">
-                <div class="nft-title">${nft.title}</div>
-
-                <div class="nft-meta">
-                    <span class="rarity-badge r-${nft.rarity}">
-                        ${RARITY_LABEL[nft.rarity]}
-                    </span>
-                    <span class="nft-price">❄️ ${nft.price.toLocaleString()}</span>
-                </div>
-
-                ${nft.limited && !owned ? `
-                    <div class="nft-stock-text">
-                        Осталось: ${stockLeft} / ${nft.totalStock}
+        function renderShopNFTs() {
+            const grid = document.getElementById('shop-nft-grid');
+            grid.innerHTML = Object.entries(NFT_DATA).map(([id, nft]) => {
+                const owned = ownedNFTs.includes(id);
+                const stockLeft = nft.limited ? pepeStock : null;
+                const soldOut = nft.limited && stockLeft <= 0;
+                const stockPct = nft.limited ? Math.max(0, (stockLeft / nft.totalStock) * 100) : 0;
+                return `<div class="nft-shop-card ${owned ? 'owned' : ''} ${nft.limited ? 'limited' : ''}">
+                    <div class="nft-art" style="background:${nft.gradient}">
+                        <div class="nft-art-fallback" style="filter:drop-shadow(0 0 20px ${nft.glow}80)">${nft.emoji}</div>
+                        <div class="nft-art-shimmer"></div>
+                        ${owned ? '<div class="nft-owned-tag">Owned</div>' : ''}
+                        ${nft.limited && !owned ? '<div class="nft-limited-tag">⚡ Limited</div>' : ''}
                     </div>
-                ` : ''}
+                    ${nft.limited ? `<div class="nft-stock-bar"><div class="nft-stock-fill" style="width:${stockPct}%"></div></div>` : ''}
+                    <div class="nft-info">
+                        <div class="nft-title">${nft.title}</div>
+                        <div class="nft-meta">
+                            <span class="rarity-badge r-${nft.rarity}">${RARITY_LABEL[nft.rarity]}</span>
+                            <span class="nft-price">❄️ ${nft.price.toLocaleString()}</span>
+                        </div>
+                        ${nft.limited && !owned ? `<div class="nft-stock-text">Осталось: ${stockLeft} / ${nft.totalStock}</div>` : ''}
+                        ${owned
+                            ? `<button class="nft-buy-btn owned-btn">✓ В арсенале</button>`
+                            : soldOut
+                                ? `<button class="nft-buy-btn" style="opacity:0.4;cursor:not-allowed">Распродано</button>`
+                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}',${nft.price},'${nft.emoji}','${nft.title}')">Приобрести</button>`
+                        }
+                    </div>
+                </div>`;
+            }).join('');
+        }
 
-                ${
-                    owned
-                        ? `<button class="nft-buy-btn owned-btn">✓ В арсенале</button>`
-                        : soldOut
-                            ? `<button class="nft-buy-btn" style="opacity:0.4;cursor:not-allowed">Распродано</button>`
-                            : `<button class="nft-buy-btn" onclick="buyNFT('${id}',${nft.price})">Приобрести</button>`
-                }
-            </div>
-
-        </div>`;
-    }).join('');
-}
-
-  function renderInventory() {
-    const grid = document.getElementById('my-nfts-grid');
-    const owned = Object.keys(ownedNFTs).filter(id => NFT_DATA[id]);
-
-    if (!owned.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1"><div class="empty-state"><span class="empty-icon">💎</span><p>Арсенал пуст</p></div></div>';
-        return;
-    }
-
-    grid.innerHTML = owned.map(id => {
-        const nft = NFT_DATA[id];
-        const data = ownedNFTs[id];
-        const date = new Date(data.date).toLocaleDateString();
-
-        return `<div class="my-nft-card">
-            <div class="my-nft-art" style="background:${nft.gradient}">
-                
-                <img src="${nft.img}" style="width:100%;height:100%;object-fit:cover"
-                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-
-                <div class="my-nft-art-fallback" style="display:none;filter:drop-shadow(0 0 22px ${nft.glow}90)">
-                    ${nft.emoji}
-                </div>
-
-                <div class="nft-art-shimmer"></div>
-                <div class="my-nft-owned-badge">Owned</div>
-            </div>
-
-            <div class="my-nft-info">
-                <div class="my-nft-title">${nft.title}</div>
-
-                <span class="rarity-badge r-${nft.rarity}">
-                    ${RARITY_LABEL[nft.rarity]}
-                </span>
-
-                <div class="my-nft-date">Получено: ${date}</div>
-            </div>
-        </div>`;
-    }).join('');
-}
+        function renderInventory() {
+            const grid = document.getElementById('my-nfts-grid');
+            const owned = ownedNFTs.filter(id => NFT_DATA[id]);
+            if (!owned.length) {
+                grid.innerHTML = '<div style="grid-column:1/-1"><div class="empty-state"><span class="empty-icon">💎</span><p>Арсенал пуст</p></div></div>';
+                return;
+            }
+            grid.innerHTML = owned.map(id => {
+                const nft = NFT_DATA[id];
+                return `<div class="my-nft-card">
+                    <div class="my-nft-art" style="background:${nft.gradient}">
+                        <div class="my-nft-art-fallback" style="filter:drop-shadow(0 0 22px ${nft.glow}90)">${nft.emoji}</div>
+                        <div class="nft-art-shimmer"></div>
+                        <div class="my-nft-owned-badge">Owned</div>
+                    </div>
+                    <div class="my-nft-info">
+                        <div class="my-nft-title">${nft.title}</div>
+                        <span class="rarity-badge r-${nft.rarity}">${RARITY_LABEL[nft.rarity]}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
 
         function renderTasks() {
             if (!lastTasks.length) {
@@ -1086,50 +1044,26 @@
         }
 
         async function buyNFT(id, price, emoji, title) {
-         if (ownedNFTs[id]) {
-        showToast('Уже в арсенале', 'error');
-        return;
-    }
-
-    if (currentSNC < price) {
-        showToast('Недостаточно SNC', 'error');
-        return;
-    }
-
-    tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
-        if (!ok) return;
-
-        tg.HapticFeedback.impactOccurred('heavy');
-
-        try {
-            const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, {
-                method: 'POST'
+            if (ownedNFTs.includes(id)) { showToast('Уже в арсенале', 'error'); return; }
+            if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
+            tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
+                if (!ok) return;
+                tg.HapticFeedback.impactOccurred('heavy');
+                try {
+                    const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, { method: 'POST' });
+                    if (r.ok) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                        showToast(`${emoji} ${title} в арсенале!`, 'success');
+                        await loadUserData();
+                        renderShopNFTs();
+                    } else {
+                        const e = await r.json();
+                        showToast(e.detail || 'Ошибка', 'error');
+                    }
+                } catch (e) { showToast('Ошибка подключения', 'error'); }
             });
-
-            if (r.ok) {
-                tg.HapticFeedback.notificationOccurred('success');
-
-                showToast(`${emoji} ${title} в арсенале!`, 'success');
-
-                ownedNFTs[id] = {
-                    date: Date.now()
-                };
-
-                await loadUserData();
-
-                renderShopNFTs();
-                renderInventory();
-
-            } else {
-                const e = await r.json();
-                showToast(e.detail || 'Ошибка', 'error');
-            }
-
-        } catch (e) {
-            showToast('Ошибка подключения', 'error');
         }
-    });
-}
+
         async function sendTransfer() {
             const target = document.getElementById('target').value.trim().replace('@','');
             const amount = parseInt(document.getElementById('amount').value);
