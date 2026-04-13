@@ -917,7 +917,7 @@
                             ? `<button class="nft-buy-btn owned-btn">✓ В арсенале</button>`
                             : soldOut
                                 ? `<button class="nft-buy-btn" style="opacity:0.4;cursor:not-allowed">Распродано</button>`
-                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}',${nft.price},'${nft.emoji}','${nft.title}')">Приобрести</button>`
+                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}', ${nft.price}, '${nft.emoji}', '${nft.title || "NFT"}')">Приобрести</button>`
                         }
                     </div>
                 </div>`;
@@ -1039,26 +1039,36 @@
             }
         }
 
-        async function buyNFT(id, price, emoji, title) {
-            if (ownedNFTs.includes(id)) { showToast('Уже в арсенале', 'error'); return; }
-            if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
-            tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
-                if (!ok) return;
-                tg.HapticFeedback.impactOccurred('heavy');
-                try {
-                    const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, { method: 'POST' });
-                    if (r.ok) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                        showToast(`${emoji} ${title} в арсенале!`, 'success');
-                        await loadUserData();
-                        renderShopNFTs();
-                    } else {
-                        const e = await r.json();
-                        showToast(e.detail || 'Ошибка', 'error');
-                    }
-                } catch (e) { showToast('Ошибка подключения', 'error'); }
-            });
+       async function buyNFT(id, price, emoji, title) {
+    title = title || 'NFT';
+    emoji = emoji || '💎';
+
+    if (ownedNFTs.includes(id)) { showToast('Уже в арсенале', 'error'); return; }
+    if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
+
+    tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
+        if (!ok) return;
+
+        tg.HapticFeedback.impactOccurred('heavy');
+
+        try {
+            const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, { method: 'POST' });
+
+            if (r.ok) {
+                tg.HapticFeedback.notificationOccurred('success');
+                showToast(`${emoji} ${title} в арсенале!`, 'success');
+
+                await loadUserData();
+                renderShopNFTs();
+            } else {
+                const e = await r.json();
+                showToast(e.detail || 'Ошибка', 'error');
+            }
+        } catch (e) {
+            showToast('Ошибка подключения', 'error');
         }
+    });
+}
 
         async function sendTransfer() {
             const target = document.getElementById('target').value.trim().replace('@','');
