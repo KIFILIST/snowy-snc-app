@@ -5,525 +5,765 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Snowy SNC</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-main: #05070a;
-            --primary: #00f2ff;
-            --secondary: #7000ff;
-            --accent: #ff00c8;
-            --surface: rgba(255, 255, 255, 0.05);
-            --border: rgba(255, 255, 255, 0.1);
-            --text-main: #ffffff;
-            --text-muted: #8e8e93;
-            --success: #00ff88;
+            --bg: #060810;
+            --primary: #00e5ff;
+            --primary-dim: rgba(0,229,255,0.1);
+            --primary-glow: rgba(0,229,255,0.35);
+            --secondary: #6e00ff;
+            --accent: #ff00e5;
+            --gold: #ffd700;
+            --success: #00ffaa;
+            --surface: rgba(255,255,255,0.035);
+            --surface-2: rgba(255,255,255,0.065);
+            --border: rgba(255,255,255,0.07);
+            --border-active: rgba(0,229,255,0.3);
+            --text: #f0f4ff;
+            --muted: rgba(240,244,255,0.38);
+            --muted2: rgba(240,244,255,0.62);
         }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg-main);
-            background-image: 
-                radial-gradient(circle at 0% 0%, rgba(112, 0, 255, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(0, 242, 255, 0.15) 0%, transparent 50%);
-            color: var(--text-main);
-            margin: 0;
-            padding: 0;
-            padding-bottom: 140px;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding-bottom: 130px;
             min-height: 100vh;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        @keyframes pulseGlow {
-            0% { filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.2)); }
-            50% { filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.5)); }
-            100% { filter: drop-shadow(0 0 5px rgba(0, 242, 255, 0.2)); }
+        .bg-mesh {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        }
+        .bg-mesh::before {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 70% 55% at 15% 8%, rgba(110,0,255,0.2) 0%, transparent 60%),
+                radial-gradient(ellipse 55% 45% at 88% 85%, rgba(0,229,255,0.13) 0%, transparent 60%),
+                radial-gradient(ellipse 45% 35% at 52% 48%, rgba(255,0,229,0.07) 0%, transparent 60%);
+        }
+        .bg-grid {
+            position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: radial-gradient(ellipse at center, black 10%, transparent 75%);
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        canvas#snow {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; opacity: 0.5;
         }
+
+        .page { position: relative; z-index: 2; }
 
         .header {
             text-align: center;
-            padding: 60px 20px 40px;
-            position: relative;
+            padding: 54px 20px 30px;
         }
 
-        .balance-title {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            font-weight: 800;
-            margin-bottom: 8px;
+        .header-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,229,255,0.07);
+            border: 1px solid rgba(0,229,255,0.18);
+            border-radius: 100px;
+            padding: 5px 14px 5px 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 2.5px; text-transform: uppercase;
+            color: var(--primary); margin-bottom: 22px;
+        }
+        .header-pill-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+            animation: dotBlink 2s ease-in-out infinite;
+        }
+        @keyframes dotBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .balance-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 4px; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 8px;
         }
 
         .balance-value {
-            font-size: 58px;
-            font-weight: 800;
-            margin: 0;
-            background: linear-gradient(180deg, #fff 30%, var(--primary) 100%);
+            font-family: 'Syne', sans-serif;
+            font-size: 64px; font-weight: 800;
+            letter-spacing: -4px; line-height: 1;
+            background: linear-gradient(155deg, #fff 0%, #c8f0ff 40%, var(--primary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: pulseGlow 3s infinite;
-            letter-spacing: -2px;
+            filter: drop-shadow(0 0 24px rgba(0,229,255,0.45));
+            animation: balancePulse 5s ease-in-out infinite;
+        }
+        @keyframes balancePulse {
+            0%,100% { filter: drop-shadow(0 0 18px rgba(0,229,255,0.3)); }
+            50% { filter: drop-shadow(0 0 42px rgba(0,229,255,0.65)); }
         }
 
-        .container { padding: 0 16px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .balance-ticker {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px; font-weight: 700;
+            color: var(--primary); opacity: 0.6;
+            letter-spacing: 2.5px; margin-top: 6px;
+        }
 
-        .main-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 30px; }
+        .header-username {
+            font-size: 12px; font-weight: 600;
+            color: var(--muted); margin-top: 10px;
+            letter-spacing: 0.3px;
+        }
+
+        .container { padding: 0 14px; }
+
+        .tab-content { display: none; }
+        .tab-content.active {
+            display: block;
+            animation: pageIn 0.3s cubic-bezier(0.16,1,0.3,1);
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.99); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 19px; font-weight: 800;
+            letter-spacing: -0.3px;
+            margin: 0 0 14px 2px;
+            background: linear-gradient(90deg, #fff 55%, rgba(255,255,255,0.35));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            overflow: hidden;
+            transition: border-color 0.3s, transform 0.2s;
+        }
+        .glass-card:active { transform: scale(0.985); }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+
         .menu-btn {
             background: var(--surface);
-            padding: 24px 16px;
-            border-radius: 24px;
             border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 22px 14px;
             text-align: center;
-            backdrop-filter: blur(20px);
-            transition: 0.2s;
             cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+            position: relative; overflow: hidden;
         }
-        .menu-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
-        .menu-btn span { display: block; font-size: 32px; margin-bottom: 8px; }
-        .menu-btn p { margin: 0; font-weight: 700; font-size: 13px; color: var(--text-main); }
-
-        .card {
-            background: var(--surface);
-            padding: 24px;
-            border-radius: 28px;
-            margin-bottom: 16px;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(20px);
+        .menu-btn::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(0,229,255,0.07), rgba(110,0,255,0.07));
+            opacity: 0; transition: opacity 0.3s;
         }
-
-        input {
-            width: 100%;
-            padding: 20px;
-            margin-bottom: 12px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: rgba(0, 0, 0, 0.3);
-            color: white;
-            box-sizing: border-box;
-            font-size: 16px;
-            font-family: inherit;
-            outline: none;
-            transition: 0.3s;
-        }
-        input:focus { border-color: var(--primary); background: rgba(0, 0, 0, 0.5); }
-
-        button {
-            width: 100%;
-            padding: 20px;
-            border-radius: 20px;
-            border: none;
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            color: white;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:active { transform: scale(0.97); filter: brightness(1.2); }
-
-        .section-title { font-size: 22px; font-weight: 800; margin: 0 0 20px 8px; letter-spacing: -0.5px; }
-
-        .leader-row {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            border-radius: 20px;
-            margin-bottom: 10px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid transparent;
-            transition: 0.2s;
-        }
-        .rank { font-weight: 800; width: 45px; font-size: 18px; color: var(--text-muted); }
-        .username { flex-grow: 1; font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; }
-        .score { font-weight: 800; color: var(--primary); font-variant-numeric: tabular-nums; }
-
-        .shop-card {
-            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border-radius: 28px;
-            padding: 24px;
-            margin-bottom: 16px;
-            border: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .shop-card.featured {
-            border-color: rgba(0, 242, 255, 0.3);
-            background: linear-gradient(145deg, rgba(0, 242, 255, 0.07) 0%, rgba(255,255,255,0.01) 100%);
-        }
-        .shop-header { display: flex; justify-content: space-between; align-items: flex-start; }
-        .shop-info h4 { margin: 0; font-size: 20px; font-weight: 800; }
-        .shop-info p { margin: 4px 0 0; font-size: 14px; color: var(--text-muted); }
-        .shop-price {
-            background: rgba(255, 204, 0, 0.1);
-            color: #ffcc00;
-            padding: 8px 14px;
-            border-radius: 12px;
-            font-weight: 800;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-        }
-        .shop-price.snc { color: var(--primary); background: rgba(0, 242, 255, 0.1); }
-        .shop-btn { background: #fff; color: #000; padding: 16px; }
-
-        .badge-popular {
-            display: inline-block;
-            background: rgba(0, 242, 255, 0.15);
-            color: var(--primary);
-            font-size: 10px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 8px;
-            margin-top: 6px;
+        .menu-btn:active { transform: scale(0.93); }
+        .menu-btn:active::after { opacity: 1; }
+        .menu-btn .icon { font-size: 30px; display: block; margin-bottom: 8px; }
+        .menu-btn .label {
+            font-family: 'Syne', sans-serif;
+            font-size: 11px; font-weight: 700;
+            color: var(--muted2); letter-spacing: 0.5px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+        }
+
+        .input-wrap { position: relative; margin-bottom: 10px; }
+        .input-wrap input {
+            width: 100%;
+            padding: 17px 18px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+            font-size: 15px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .input-wrap input:focus {
+            border-color: var(--primary);
+            background: rgba(0,229,255,0.04);
+            box-shadow: 0 0 0 3px rgba(0,229,255,0.08), 0 0 20px rgba(0,229,255,0.08);
+        }
+        .input-wrap input::placeholder { color: var(--muted); font-weight: 500; }
+
+        .btn-primary {
+            width: 100%; padding: 17px; border-radius: 16px; border: none;
+            background: linear-gradient(135deg, var(--secondary) 0%, #4040ff 50%, var(--primary) 100%);
+            background-size: 200% 200%;
+            color: white;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px; font-weight: 800;
+            cursor: pointer; transition: all 0.3s; overflow: hidden; position: relative;
+            letter-spacing: 0.5px; animation: gradShift 5s ease infinite;
+        }
+        @keyframes gradShift {
+            0%,100% { background-position: 0% 50%; }
+            50%      { background-position: 100% 50%; }
+        }
+        .btn-primary:active { transform: scale(0.97); filter: brightness(1.1); }
+
+        .btn-white {
+            width: 100%; padding: 13px; border-radius: 14px; border: none;
+            background: rgba(255,255,255,0.9); color: #050710;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px; font-weight: 800;
+            cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+        }
+        .btn-white:active { transform: scale(0.97); background: white; }
+
+        .divider { height: 1px; background: var(--border); margin: 22px 0; }
+
+        .stars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+
+        .stars-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 14px;
+            position: relative; overflow: hidden;
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .stars-card.featured {
+            grid-column: 1 / -1;
+            border-color: rgba(0,229,255,0.2);
+            background: linear-gradient(135deg, rgba(0,229,255,0.06), rgba(110,0,255,0.06));
+        }
+        .stars-card.featured::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        .stars-card:active { transform: scale(0.96); }
+        .stars-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .stars-card-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px; font-weight: 800;
+        }
+        .stars-amount {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px; font-weight: 800;
+            color: var(--primary); letter-spacing: -0.5px;
+        }
+        .stars-price-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(255,215,0,0.1);
+            color: var(--gold);
+            border-radius: 10px; padding: 4px 9px;
+            font-size: 12px; font-weight: 800;
+        }
+        .hot-badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            background: linear-gradient(135deg, rgba(255,80,80,0.15), rgba(255,0,0,0.1));
+            border: 1px solid rgba(255,80,80,0.25);
+            color: #ff6060;
+            font-family: 'Syne', sans-serif;
+            font-size: 9px; font-weight: 800;
+            padding: 3px 8px; border-radius: 8px;
+            text-transform: uppercase; letter-spacing: 1px; margin-left: 6px;
+        }
+
+        .nft-shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .nft-shop-card {
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+            cursor: pointer;
+        }
+        .nft-shop-card:active { transform: scale(0.95); }
+        .nft-shop-card.owned { border-color: rgba(0,255,170,0.3); }
+        .nft-shop-card.limited { border-color: rgba(255,215,0,0.35); }
+
+        .nft-art {
+            width: 100%; aspect-ratio: 1 / 1;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .nft-art img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+        .nft-art-fallback {
+            font-size: 62px;
+            filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6));
+            animation: floatNFT 3.5s ease-in-out infinite;
+            position: relative; z-index: 1;
+        }
+        @keyframes floatNFT {
+            0%,100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-7px) scale(1.04); }
+        }
+
+        .nft-art-shimmer {
+            position: absolute; inset: 0; z-index: 2;
+            background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.07) 50%, transparent 70%);
+            background-size: 200% 200%;
+            animation: shimmerSlide 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes shimmerSlide {
+            0%   { background-position: -100% -100%; }
+            100% { background-position: 250% 250%; }
+        }
+
+        .nft-owned-tag {
+            position: absolute; top: 8px; right: 8px;
+            background: var(--success); color: #000;
+            font-family: 'Syne', sans-serif;
+            font-size: 8px; font-weight: 800;
+            padding: 3px 8px; border-radius: 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            z-index: 3;
+        }
+
+        .nft-limited-tag {
+            position: absolute; top: 8px; left: 8px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.92), rgba(255,160,0,0.92));
+            color: #000;
+            font-family: 'Syne', sans-serif;
+            font-size: 8px; font-weight: 800;
+            padding: 3px 8px; border-radius: 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            z-index: 3;
+            animation: limitedPulse 2s ease-in-out infinite;
+        }
+        @keyframes limitedPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
+            50%      { box-shadow: 0 0 0 4px rgba(255,215,0,0); }
+        }
+
+        .nft-stock-bar {
+            height: 2px;
+            background: rgba(255,255,255,0.06);
+        }
+        .nft-stock-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), #ffaa00);
+            transition: width 1s ease;
+        }
+
+        .nft-info {
+            padding: 12px 12px 14px;
+            background: rgba(6,8,16,0.92);
+        }
+        .nft-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 12px; font-weight: 800;
+            margin-bottom: 6px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .nft-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .rarity-badge {
+            font-family: 'Syne', sans-serif;
+            font-size: 9px; font-weight: 800;
+            padding: 3px 8px; border-radius: 7px;
+            text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .r-common  { background: rgba(142,142,147,0.12); color: #8e8e93; }
+        .r-rare    { background: rgba(0,122,255,0.12); color: #5ba5ff; }
+        .r-epic    { background: rgba(163,85,247,0.15); color: #c084fc; }
+        .r-legend  { background: rgba(255,215,0,0.12); color: var(--gold); }
+
+        .nft-price {
+            font-family: 'Syne', sans-serif;
+            font-size: 12px; font-weight: 800;
+            color: var(--primary); letter-spacing: -0.3px;
+        }
+        .nft-stock-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 10px; font-weight: 700;
+            color: var(--gold); margin-bottom: 6px; letter-spacing: 0.3px;
+        }
+        .nft-buy-btn {
+            width: 100%; padding: 10px; border-radius: 12px; border: none;
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+            font-family: 'Syne', sans-serif;
+            font-size: 11px; font-weight: 800;
+            cursor: pointer; transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .nft-buy-btn:active { background: rgba(0,229,255,0.12); color: var(--primary); }
+        .nft-buy-btn.owned-btn {
+            background: rgba(0,255,170,0.08);
+            color: var(--success); cursor: default;
+        }
+
+        .leader-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            overflow: hidden;
+        }
+        .leader-row {
+            display: flex; align-items: center;
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s; gap: 11px;
+        }
+        .leader-row:last-child { border-bottom: none; }
+        .leader-row.me {
+            background: rgba(0,229,255,0.05);
+            border-color: rgba(0,229,255,0.12);
+        }
+        .rank-num {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800; font-size: 14px;
+            width: 34px; text-align: center;
+            color: var(--muted); flex-shrink: 0;
+        }
+        .rank-icon { font-size: 20px; width: 34px; text-align: center; flex-shrink: 0; }
+        .leader-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 12px; font-weight: 800; flex-shrink: 0;
+        }
+        .leader-name {
+            flex: 1; font-size: 14px; font-weight: 600;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .leader-score {
+            font-family: 'Syne', sans-serif;
+            font-size: 14px; font-weight: 800;
+            color: var(--primary); font-variant-numeric: tabular-nums;
         }
 
         .quest-card {
             background: var(--surface);
-            border-radius: 24px;
             border: 1px solid var(--border);
-            margin-bottom: 12px;
-            overflow: hidden;
-            transition: 0.2s;
+            border-radius: 22px;
+            margin-bottom: 10px;
+            overflow: hidden; transition: all 0.3s;
         }
-        .quest-card.done { border-color: rgba(0, 255, 136, 0.2); }
-        .quest-card.claimed { opacity: 0.5; }
-        .quest-inner { padding: 20px; }
-        .quest-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .quest-title { font-size: 15px; font-weight: 800; margin: 0 0 4px; }
-        .quest-desc { font-size: 13px; color: var(--text-muted); margin: 0; }
-        .quest-reward-badge {
-            background: rgba(0, 242, 255, 0.1);
-            color: var(--primary);
-            font-size: 13px;
-            font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 12px;
-            white-space: nowrap;
+        .quest-card.done { border-color: rgba(0,255,170,0.2); }
+        .quest-card.claimed { opacity: 0.4; }
+        .quest-inner { padding: 17px; }
+        .quest-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .quest-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 14px; font-weight: 800; margin-bottom: 4px;
         }
-        .quest-reward-badge.golden { background: rgba(255,204,0,0.1); color: #ffcc00; }
-        .quest-progress-bar {
-            height: 4px;
-            background: rgba(255,255,255,0.07);
-            border-radius: 0 0 24px 24px;
-            overflow: hidden;
+        .quest-desc { font-size: 13px; color: var(--muted2); margin-bottom: 11px; line-height: 1.4; }
+        .quest-reward {
+            padding: 6px 11px; border-radius: 11px;
+            font-family: 'Syne', sans-serif;
+            font-size: 12px; font-weight: 800;
+            white-space: nowrap; flex-shrink: 0;
         }
-        .quest-progress-fill {
-            height: 100%;
+        .quest-reward.cyan { background: rgba(0,229,255,0.1); color: var(--primary); }
+        .quest-reward.gold { background: rgba(255,215,0,0.1); color: var(--gold); }
+        .quest-progress-text { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+        .progress-track {
+            height: 3px; background: rgba(255,255,255,0.05);
+            border-radius: 100px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; border-radius: 100px;
             background: linear-gradient(90deg, var(--secondary), var(--primary));
-            border-radius: 4px;
-            transition: width 0.5s ease;
+            transition: width 0.9s cubic-bezier(0.16,1,0.3,1);
         }
-        .quest-progress-fill.done { background: var(--success); }
-        .claim-btn {
-            width: 100%;
-            padding: 14px;
-            margin-top: 12px;
-            border-radius: 16px;
-            border: none;
-            background: linear-gradient(135deg, var(--secondary), var(--primary));
-            color: white;
-            font-size: 14px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .claim-btn:active { transform: scale(0.97); }
-        .claim-btn.daily-claim {
-            background: linear-gradient(135deg, #ffcc00, #ff9500);
+        .progress-fill.done { background: linear-gradient(90deg, #00c853, var(--success)); }
+
+        .btn-claim {
+            width: 100%; margin-top: 12px;
+            padding: 13px; border-radius: 14px; border: none;
+            background: linear-gradient(135deg, #00c853, var(--success));
             color: #000;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px; font-weight: 800;
+            cursor: pointer; transition: all 0.25s; overflow: hidden; position: relative;
+            letter-spacing: 0.3px;
         }
-        .done-badge {
-            font-size: 12px;
-            font-weight: 800;
-            padding: 6px 14px;
-            border-radius: 12px;
-            background: rgba(0,255,136,0.1);
+        .btn-claim:active { transform: scale(0.97); }
+        .btn-claim::before {
+            content: '';
+            position: absolute; top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shine 2.5s ease-in-out infinite;
+        }
+        @keyframes shine { 0%{left:-100%} 100%{left:200%} }
+
+        .done-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            margin-top: 9px; padding: 6px 13px;
+            border-radius: 11px;
+            background: rgba(0,255,170,0.09);
+            border: 1px solid rgba(0,255,170,0.14);
             color: var(--success);
-            margin-top: 12px;
-            display: inline-block;
+            font-size: 12px; font-weight: 700;
         }
 
+        .daily-header {
+            display: flex; justify-content: space-between;
+            align-items: center; margin-bottom: 14px;
+        }
         .daily-reset {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-
-        .nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .nft-card {
-            background: var(--surface);
-            border-radius: 28px;
-            padding: 30px 10px;
-            text-align: center;
+            font-size: 11px; color: var(--muted); font-weight: 600;
+            background: rgba(255,255,255,0.04);
+            padding: 5px 10px; border-radius: 10px;
             border: 1px solid var(--border);
-            position: relative;
-            overflow: hidden;
         }
-        .nft-icon { font-size: 44px; margin-bottom: 12px; display: block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
 
-        .rarity-tag {
-            font-size: 10px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 8px;
-            display: inline-block;
-            margin-top: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .my-nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .my-nft-card {
+            border-radius: 22px; overflow: hidden;
+            border: 1px solid rgba(0,255,170,0.2);
+            background: var(--surface);
+            transition: all 0.3s;
         }
-        .rarity-common { background: rgba(142,142,147,0.15); color: #8e8e93; }
-        .rarity-rare { background: rgba(0,122,255,0.15); color: #007aff; }
-        .rarity-epic { background: rgba(112,0,255,0.15); color: #a855f7; }
-        .rarity-legend { background: rgba(255,204,0,0.15); color: #ffcc00; }
+        .my-nft-card:active { transform: scale(0.97); }
+        .my-nft-art {
+            width: 100%; aspect-ratio: 1/1;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .my-nft-art img { width: 100%; height: 100%; object-fit: cover; }
+        .my-nft-art-fallback {
+            font-size: 60px;
+            filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5));
+            animation: floatNFT 3.5s ease-in-out infinite;
+            position: relative; z-index: 1;
+        }
+        .my-nft-owned-badge {
+            position: absolute; bottom: 7px; right: 7px;
+            background: var(--success); color: #000;
+            font-family: 'Syne', sans-serif;
+            font-size: 8px; font-weight: 800;
+            padding: 3px 7px; border-radius: 7px;
+            text-transform: uppercase; z-index: 3;
+        }
+        .my-nft-info { padding: 11px 12px 13px; background: rgba(6,8,16,0.9); }
+        .my-nft-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 12px; font-weight: 800;
+            margin-bottom: 5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
 
         .bottom-nav {
-            position: fixed;
-            bottom: 24px;
-            left: 16px;
-            right: 16px;
-            background: rgba(10, 12, 20, 0.8);
-            backdrop-filter: blur(30px);
-            border-radius: 24px;
-            border: 1px solid var(--border);
-            display: flex;
-            padding: 8px;
+            position: fixed; bottom: 14px; left: 12px; right: 12px;
+            background: rgba(6,8,20,0.88);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 28px;
+            display: flex; padding: 6px;
             z-index: 1000;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset;
         }
         .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 12px 0;
-            border-radius: 18px;
-            color: var(--text-muted);
-            transition: 0.3s;
-            cursor: pointer;
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; padding: 10px 4px;
+            border-radius: 22px; color: var(--muted);
+            cursor: pointer; transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+            position: relative; gap: 3px;
         }
-        .nav-item.active { color: var(--primary); background: rgba(255,255,255,0.05); }
-        .nav-icon { font-size: 20px; margin-bottom: 4px; }
-        .nav-label { font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .nav-item.active {
+            color: var(--primary);
+            background: rgba(0,229,255,0.08);
+        }
+        .nav-item.active::before {
+            content: ''; position: absolute; top: 5px;
+            width: 18px; height: 2px;
+            background: var(--primary); border-radius: 10px;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .nav-icon { font-size: 18px; line-height: 1; }
+        .nav-label {
+            font-family: 'Syne', sans-serif;
+            font-size: 9px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
 
-        .owned-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--success);
-            color: black;
-            font-size: 8px;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 6px;
-            text-transform: uppercase;
+        .toast {
+            position: fixed; top: 20px; left: 50%;
+            transform: translateX(-50%) translateY(-80px);
+            background: rgba(8,12,24,0.96);
+            border: 1px solid rgba(0,229,255,0.22);
+            border-radius: 16px; padding: 12px 20px;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px; font-weight: 700;
+            color: white; z-index: 3000;
+            transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+            backdrop-filter: blur(24px);
+            white-space: nowrap; max-width: 88vw;
+            text-overflow: ellipsis; overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: rgba(0,255,170,0.3); }
+        .toast.error   { border-color: rgba(255,60,60,0.3); }
+
+        .empty-state {
+            text-align: center; padding: 40px 20px; color: var(--muted);
+        }
+        .empty-icon { font-size: 38px; margin-bottom: 12px; display: block; opacity: 0.45; }
+        .empty-state p { font-size: 14px; font-weight: 600; }
+
+        .loading-dots::after {
+            content: '';
+            animation: dotsAnim 1.5s infinite;
+        }
+        @keyframes dotsAnim {
+            0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'}
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="balance-title">Баланс</div>
-        <div class="balance-value" id="user-balance">0</div>
-    </div>
+    <div class="bg-mesh"><div class="bg-grid"></div></div>
+    <canvas id="snow"></canvas>
+    <div id="toast" class="toast"></div>
 
-    <div id="tab-home" class="container tab-content active">
-        <div class="main-menu">
-            <div class="menu-btn" onclick="switchTab('nfts')">
-                <span>💎</span> <p>Мои NFT</p>
+    <div class="page">
+        <div class="header">
+            <div class="balance-label">Капитал</div>
+            <div class="balance-value" id="user-balance">—</div>
+            <div class="balance-ticker">SNC ❄️</div>
+            <div class="header-username" id="header-username"></div>
+        </div>
+
+        <div id="tab-home" class="container tab-content active">
+            <div class="menu-grid">
+                <div class="menu-btn" onclick="switchTab('nfts')">
+                    <span class="icon">💎</span>
+                    <span class="label">Мои NFT</span>
+                </div>
+                <div class="menu-btn" onclick="switchTab('leaderboard')">
+                    <span class="icon">🏆</span>
+                    <span class="label">Рейтинг</span>
+                </div>
+                <div class="menu-btn" onclick="switchTab('tasks')">
+                    <span class="icon">🎯</span>
+                    <span class="label">Квесты</span>
+                </div>
+                <div class="menu-btn" onclick="openBot()">
+                    <span class="icon">🤖</span>
+                    <span class="label">В приложение</span>
+                </div>
             </div>
-            <div class="menu-btn" onclick="switchTab('leaderboard')">
-                <span>🏆</span> <p>Рейтинг</p>
+
+            <div class="section-title">Перевод SNC</div>
+            <div class="glass-card" style="padding:20px;margin-bottom:0">
+                <div class="input-wrap">
+                    <input type="text" id="target" placeholder="@username получателя" spellcheck="false" autocomplete="off">
+                </div>
+                <div class="input-wrap" style="margin-bottom:14px">
+                    <input type="number" id="amount" placeholder="Количество SNC">
+                </div>
+                <button class="btn-primary" onclick="sendTransfer()">Отправить средства →</button>
             </div>
         </div>
-        <h2 class="section-title">Транзакции</h2>
-        <div class="card">
-            <input type="text" id="target" placeholder="@username получателя" spellcheck="false" autocomplete="off">
-            <input type="number" id="amount" placeholder="Количество SNC">
-            <button onclick="sendTransfer()">Отправить средства</button>
-        </div>
-    </div>
 
-    <div id="tab-tasks" class="container tab-content">
-        <h2 class="section-title">Ежедневные</h2>
-        <div class="daily-reset" id="daily-reset-label">Сбрасываются в полночь</div>
-        <div id="daily-list"></div>
-
-        <h2 class="section-title">Квесты штаба</h2>
-        <div id="tasks-list">
-            <div class="card" style="text-align:center;color:var(--text-muted);">Инициализация...</div>
-        </div>
-    </div>
-
-    <div id="tab-shop" class="container tab-content">
-        <h2 class="section-title">Звездная биржа</h2>
-
-        <div class="shop-card">
-    <div class="shop-header">
-        <div class="shop-info">
-            <h4>Стартовый пакет</h4>
-            <p>15 SNC — для экстренных нужд</p>
-        </div>
-        <div class="shop-price"><span>⭐</span> 10</div>
-    </div>
-    <button class="shop-btn" onclick="buySNC(15, 10)">Купить</button>
-</div>
-
-<div class="shop-card">
-    <div class="shop-header">
-        <div class="shop-info">
-            <h4>Пакет Рекрута</h4>
-            <p>50 SNC</p>
-        </div>
-        <div class="shop-price"><span>⭐</span> 30</div>
-    </div>
-    <button class="shop-btn" onclick="buySNC(50, 30)">Купить</button>
-</div>
-
-<div class="shop-card featured">
-    <div class="shop-header">
-        <div class="shop-info">
-            <h4>Пакет Бойца</h4>
-            <p>120 SNC<br><span class="badge-popular">Рекомендуемый</span></p>
-        </div>
-        <div class="shop-price"><span>⭐</span> 70</div>
-    </div>
-    <button class="shop-btn" onclick="buySNC(120, 70)">Купить</button>
-</div>
-
-<div class="shop-card">
-    <div class="shop-header">
-        <div class="shop-info">
-            <h4>Пакет Ветерана</h4>
-            <p>250 SNC</p>
-        </div>
-        <div class="shop-price"><span>⭐</span> 140</div>
-    </div>
-    <button class="shop-btn" onclick="buySNC(250, 140)">Купить</button>
-</div>
-
-<div class="shop-card">
-    <div class="shop-header">
-        <div class="shop-info">
-            <h4>Пакет Командира</h4>
-            <p>450 SNC</p>
-        </div>
-        <div class="shop-price"><span>⭐</span> 240</div>
-    </div>
-    <button class="shop-btn" onclick="buySNC(450, 240)">Купить</button>
-</div>
-
-<div class="shop-card">
-    <div class="shop-header">
-        <div class="shop-info">
-            <h4>Пакет элиты</h4>
-            <p>700 SNC</p>
-        </div>
-        <div class="shop-price"><span>⭐</span> 350</div>
-        </div>
-        <button class="shop-btn" onclick="buySNC(700, 350)">Купить</button>
-       </div>
-
-        <h2 class="section-title">Рынок Артефактов</h2>
-
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Снежный Жетон</h4><p>Обычный. Знак участника.</p></div>
-                <div class="shop-price snc">❄️ 500</div>
+        <div id="tab-tasks" class="container tab-content">
+            <div class="daily-header">
+                <div class="section-title" style="margin:0">Ежедневные</div>
+                <div class="daily-reset">Сброс в полночь</div>
             </div>
-            <button class="shop-btn" onclick="buyNFT('token', 500, '🪙', 'Снежный Жетон')">Приобрести</button>
-        </div>
-
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Ледяной Щит</h4><p>Обычный. Защитник штаба.</p></div>
-                <div class="shop-price snc">❄️ 1,200</div>
+            <div id="daily-list"></div>
+            <div class="divider"></div>
+            <div class="section-title">Квесты штаба</div>
+            <div id="tasks-list">
+                <div class="empty-state"><span class="empty-icon loading-dots">Загрузка</span></div>
             </div>
-            <button class="shop-btn" onclick="buyNFT('shield', 1200, '🛡️', 'Ледяной Щит')">Приобрести</button>
         </div>
 
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Снежинка</h4><p>Редкий. Легенда о первой снежинке.</p></div>
-                <div class="shop-price snc">❄️ 3,500</div>
+        <div id="tab-shop" class="container tab-content">
+            <div class="section-title">Биржа Stars</div>
+            <div class="stars-grid">
+                <div class="stars-card" onclick="buySNC(100,15)">
+                    <div class="stars-card-head">
+                        <span class="stars-card-name">Стартовый</span>
+                        <span class="stars-price-badge">⭐ 15</span>
+                    </div>
+                    <div class="stars-amount">100 SNC</div>
+                </div>
+                <div class="stars-card" onclick="buySNC(300,40)">
+                    <div class="stars-card-head">
+                        <span class="stars-card-name">Новичок</span>
+                        <span class="stars-price-badge">⭐ 40</span>
+                    </div>
+                    <div class="stars-amount">300 SNC</div>
+                </div>
+                <div class="stars-card featured" onclick="buySNC(800,99)">
+                    <div class="stars-card-head">
+                        <div style="display:flex;align-items:center">
+                            <span class="stars-card-name">Боец</span>
+                            <span class="hot-badge">🔥 ХИТ</span>
+                        </div>
+                        <span class="stars-price-badge">⭐ 99</span>
+                    </div>
+                    <div class="stars-amount">800 SNC</div>
+                </div>
+                <div class="stars-card" onclick="buySNC(2000,230)">
+                    <div class="stars-card-head">
+                        <span class="stars-card-name">Ветеран</span>
+                        <span class="stars-price-badge">⭐ 230</span>
+                    </div>
+                    <div class="stars-amount">2 000 SNC</div>
+                </div>
+                <div class="stars-card" onclick="buySNC(5000,550)">
+                    <div class="stars-card-head">
+                        <span class="stars-card-name">Командир</span>
+                        <span class="stars-price-badge">⭐ 550</span>
+                    </div>
+                    <div class="stars-amount">5 000 SNC</div>
+                </div>
+                <div class="stars-card" onclick="buySNC(12000,1200)">
+                    <div class="stars-card-head">
+                        <span class="stars-card-name">Генерал</span>
+                        <span class="stars-price-badge">⭐ 1200</span>
+                    </div>
+                    <div class="stars-amount">12 000 SNC</div>
+                </div>
             </div>
-            <button class="shop-btn" onclick="buyNFT('snow', 3500, '❄️', 'Снежинка')">Приобрести</button>
+
+            <div class="divider"></div>
+            <div class="section-title">Артефакты NFT</div>
+            <div class="nft-shop-grid" id="shop-nft-grid"></div>
         </div>
 
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Ледянящая Картина</h4><p>Редкий. Замораживающий вид.</p></div>
-                <div class="shop-price snc">❄️ 5,000</div>
+        <div id="tab-leaderboard" class="container tab-content">
+            <div class="section-title">Мировая Элита</div>
+            <div class="leader-card" id="leaderboard-list">
+                <div class="empty-state"><span class="loading-dots">Синхронизация</span></div>
             </div>
-            <button class="shop-btn" onclick="buyNFT('picture1', 5000, '🖼️', 'Ледянящая Картина')">Приобрести</button>
         </div>
 
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Клинок Метели</h4><p>Редкий. Острее льда.</p></div>
-                <div class="shop-price snc">❄️ 7,000</div>
-            </div>
-            <button class="shop-btn" onclick="buyNFT('blade', 7000, '⚔️', 'Клинок Метели')">Приобрести</button>
-        </div>
-
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Маска Снежного Волка</h4><p>Эпик. Страх врагов.</p></div>
-                <div class="shop-price snc">❄️ 10,000</div>
-            </div>
-            <button class="shop-btn" onclick="buyNFT('wolfmask', 10000, '🐺', 'Маска Снежного Волка')">Приобрести</button>
-        </div>
-
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Ледяной Феникс</h4><p>Эпик. +15% статуса.</p></div>
-                <div class="shop-price snc">❄️ 15,000</div>
-            </div>
-            <button class="shop-btn" onclick="buyNFT('phoenix', 15000, '🔥', 'Ледяной Феникс')">Приобрести</button>
-        </div>
-
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Трон Вечной Зимы</h4><p>Легенда. Символ власти.</p></div>
-                <div class="shop-price snc">❄️ 25,000</div>
-            </div>
-            <button class="shop-btn" onclick="buyNFT('throne', 25000, '🪑', 'Трон Вечной Зимы')">Приобрести</button>
-        </div>
-
-        <div class="shop-card">
-            <div class="shop-header">
-                <div class="shop-info"><h4>Корона Смерти</h4><p>Легенда. Уникальная аура.</p></div>
-                <div class="shop-price snc">❄️ 50,000</div>
-            </div>
-            <button class="shop-btn" onclick="buyNFT('crown', 50000, '👑', 'Корона Смерти')">Приобрести</button>
-        </div>
-    </div>
-
-    <div id="tab-leaderboard" class="container tab-content">
-        <h2 class="section-title">Мировая Элита</h2>
-        <div class="card" id="leaderboard-list">
-            <div style="text-align:center;color:var(--text-muted);">Синхронизация данных...</div>
-        </div>
-    </div>
-
-    <div id="tab-nfts" class="container tab-content">
-        <h2 class="section-title">Артефакты в наличии</h2>
-        <div class="nft-grid" id="my-nfts-grid">
-            <div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">
-                У вас пока нет приобретенных артефактов
+        <div id="tab-nfts" class="container tab-content">
+            <div class="section-title">Мой Арсенал</div>
+            <div class="my-nft-grid" id="my-nfts-grid">
+                <div style="grid-column:1/-1">
+                    <div class="empty-state">
+                        <span class="empty-icon">💎</span>
+                        <p>Арсенал пуст</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -535,7 +775,7 @@
         </div>
         <div class="nav-item" id="nav-tasks" onclick="switchTab('tasks')">
             <span class="nav-icon">🎯</span>
-            <span class="nav-label">Цели</span>
+            <span class="nav-label">Квесты</span>
         </div>
         <div class="nav-item" id="nav-shop" onclick="switchTab('shop')">
             <span class="nav-icon">⭐</span>
@@ -545,14 +785,18 @@
             <span class="nav-icon">👑</span>
             <span class="nav-label">Топ</span>
         </div>
+        <div class="nav-item" id="nav-nfts" onclick="switchTab('nfts')">
+            <span class="nav-icon">💎</span>
+            <span class="nav-label">NFT</span>
+        </div>
     </nav>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.enableClosingConfirmation();
-        tg.headerColor = '#05070a';
-        tg.backgroundColor = '#05070a';
+        tg.headerColor = '#060810';
+        tg.backgroundColor = '#060810';
 
         const SERVER_URL = "https://snowy-snc-app-production.up.railway.app";
         let username = (tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`).toLowerCase();
@@ -560,292 +804,414 @@
         let ownedNFTs = [];
         let lastTasks = [];
         let lastDailyTasks = [];
+        let pepeStock = 50;
 
-        const NFT_DATA = {
-            'token':    { icon: '🪙', title: 'Снежный Жетон',        rarity: 'common' },
-            'shield':   { icon: '🛡️', title: 'Ледяной Щит',          rarity: 'common' },
-            'snow':     { icon: '❄️', title: 'Снежинка',              rarity: 'rare' },
-            'picture1': { icon: '🖼️', title: 'Ледянящая Картина',    rarity: 'rare' },
-            'blade':    { icon: '⚔️', title: 'Клинок Метели',         rarity: 'rare' },
-            'wolfmask': { icon: '🐺', title: 'Маска Снежного Волка',  rarity: 'epic' },
-            'phoenix':  { icon: '🔥', title: 'Ледяной Феникс',        rarity: 'epic' },
-            'throne':   { icon: '🪑', title: 'Трон Вечной Зимы',      rarity: 'legend' },
-            'crown':    { icon: '👑', title: 'Корона Смерти',          rarity: 'legend' }
-        };
+        document.getElementById('header-username').textContent = '@' + username;
 
-        const RARITY_LABEL = {
-            'common': 'Обычный',
-            'rare': 'Редкий',
-            'epic': 'Эпик',
-            'legend': 'Легенда'
-        };
+       const NFT_DATA = {
+    bear: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/bear.png', emoji: '🐻', title: 'Мишка снови', price: 5000, rarity: 'rare', gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
+    rose: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/rose.png', emoji: '🌹', title: 'Роза', price: 7700, rarity: 'rare', gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
+    heart: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/heart.png', emoji: '💝', title: 'Сердце', price: 6500, rarity: 'rare', gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
+    coin: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/coin.png', emoji: '🪙', title: 'Монета SNC', price: 10000, rarity: 'epic', gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
+    pepe: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/pepe.png', emoji: '🐸', title: 'Лягушка Пепе', price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
+    penguin: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/penguin.png', emoji: '🐧', title: 'Пингвин', price: 12500, rarity: 'epic', gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
+    snowflake: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/snowflake.png', emoji: '❄️', title: 'Снежинка', price: 4000, rarity: 'rare', gradient: 'linear-gradient(145deg,#0a1a22,#0d2030)', glow: '#a8e6ff' },
+    frozenheart: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/frozenheart.png', emoji: '💙', title: 'Замороженное сердце', price: 14000, rarity: 'epic', gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
+    icecube: { img: 'https://kifilist.github.io/SNOWYAPP/NFTIcons/icecube.png', emoji: '🧊', title: 'Кубик льда', price: 7500, rarity: 'rare', gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' }
+};
+
+        const RARITY_LABEL = { common: 'Обычный', rare: 'Редкий', epic: 'Эпик', legend: 'Легенда' };
+
+        let toastTimer = null;
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + (type || '');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
+        }
+
+        function animateBalance(target) {
+            const el = document.getElementById('user-balance');
+            const start = parseInt(el.textContent.replace(/\D/g,'')) || 0;
+            const duration = 750;
+            const startTime = performance.now();
+            const step = (now) => {
+                const p = Math.min((now - startTime) / duration, 1);
+                const ease = 1 - Math.pow(1 - p, 3);
+                el.textContent = Math.round(start + (target - start) * ease).toLocaleString();
+                if (p < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        }
+
+        function openBot() {
+            tg.HapticFeedback.impactOccurred('light');
+            tg.openTelegramLink('https://t.me/SnowyappBot');
+        }
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
-            document.getElementById('nav-' + tabId).classList.add('active');
+            const navEl = document.getElementById('nav-' + tabId);
+            if (navEl) navEl.classList.add('active');
             if (tabId === 'leaderboard') { loadLeaderboard(); completeDaily('daily_leaderboard'); }
             if (tabId === 'tasks' || tabId === 'home') loadUserData();
             if (tabId === 'nfts') { renderInventory(); completeDaily('daily_nfts'); }
-            if (tabId === 'shop') completeDaily('daily_shop');
+            if (tabId === 'shop') { renderShopNFTs(); completeDaily('daily_shop'); }
             if (tabId === 'home') completeDaily('daily_login');
-            tg.HapticFeedback.impactOccurred('medium');
+            tg.HapticFeedback.impactOccurred('light');
         }
 
         async function loadUserData() {
             try {
-                const response = await fetch(`${SERVER_URL}/api/user/${username}`, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
-                if (!response.ok) throw new Error("API Connection Failed");
-                const data = await response.json();
+                const r = await fetch(`${SERVER_URL}/api/user/${username}`, { headers: { 'Accept': 'application/json' } });
+                if (!r.ok) throw new Error();
+                const data = await r.json();
                 currentSNC = data.balance;
                 ownedNFTs = data.inventory || [];
                 lastTasks = data.tasks || [];
                 lastDailyTasks = data.daily_tasks || [];
-                document.getElementById("user-balance").innerText = data.balance.toLocaleString();
+                animateBalance(data.balance);
                 renderTasks();
                 renderDailyTasks();
             } catch (e) {
-                console.error("Balance error:", e);
-                document.getElementById("user-balance").innerText = "---";
-                document.getElementById("tasks-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Ошибка подключения к серверу</div>';
+                document.getElementById('user-balance').textContent = '---';
             }
         }
 
+        async function loadPepeStock() {
+            try {
+                const r = await fetch(`${SERVER_URL}/api/nft_stock/pepe`, { headers: { 'Accept': 'application/json' } });
+                if (r.ok) {
+                    const data = await r.json();
+                    pepeStock = data.remaining ?? pepeStock;
+                }
+            } catch (e) {}
+        }
+
+ function renderShopNFTs() {
+    const grid = document.getElementById('shop-nft-grid');
+
+    grid.innerHTML = Object.entries(NFT_DATA).map(([id, nft]) => {
+        const owned = !!ownedNFTs[id];
+        const stockLeft = nft.limited ? pepeStock : null;
+        const soldOut = nft.limited && stockLeft <= 0;
+        const stockPct = nft.limited ? Math.max(0, (stockLeft / nft.totalStock) * 100) : 0;
+
+        return `<div class="nft-shop-card ${owned ? 'owned' : ''} ${nft.limited ? 'limited' : ''}">
+            
+            <div class="nft-art" style="background:${nft.gradient}">
+                
+                <img src="${nft.img}" style="width:100%;height:100%;object-fit:cover"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+
+                <div class="nft-art-fallback" style="display:none;filter:drop-shadow(0 0 20px ${nft.glow}80)">
+                    ${nft.emoji}
+                </div>
+
+                <div class="nft-art-shimmer"></div>
+
+                ${owned ? '<div class="nft-owned-tag">Owned</div>' : ''}
+                ${nft.limited && !owned ? '<div class="nft-limited-tag">⚡ Limited</div>' : ''}
+            </div>
+
+            ${nft.limited ? `
+                <div class="nft-stock-bar">
+                    <div class="nft-stock-fill" style="width:${stockPct}%"></div>
+                </div>
+            ` : ''}
+
+            <div class="nft-info">
+                <div class="nft-title">${nft.title}</div>
+
+                <div class="nft-meta">
+                    <span class="rarity-badge r-${nft.rarity}">
+                        ${RARITY_LABEL[nft.rarity]}
+                    </span>
+                    <span class="nft-price">❄️ ${nft.price.toLocaleString()}</span>
+                </div>
+
+                ${nft.limited && !owned ? `
+                    <div class="nft-stock-text">
+                        Осталось: ${stockLeft} / ${nft.totalStock}
+                    </div>
+                ` : ''}
+
+                ${
+                    owned
+                        ? `<button class="nft-buy-btn owned-btn">✓ В арсенале</button>`
+                        : soldOut
+                            ? `<button class="nft-buy-btn" style="opacity:0.4;cursor:not-allowed">Распродано</button>`
+                            : `<button class="nft-buy-btn" onclick="buyNFT('${id}',${nft.price})">Приобрести</button>`
+                }
+            </div>
+
+        </div>`;
+    }).join('');
+}
+
+  function renderInventory() {
+    const grid = document.getElementById('my-nfts-grid');
+    const owned = Object.keys(ownedNFTs).filter(id => NFT_DATA[id]);
+
+    if (!owned.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1"><div class="empty-state"><span class="empty-icon">💎</span><p>Арсенал пуст</p></div></div>';
+        return;
+    }
+
+    grid.innerHTML = owned.map(id => {
+        const nft = NFT_DATA[id];
+        const data = ownedNFTs[id];
+        const date = new Date(data.date).toLocaleDateString();
+
+        return `<div class="my-nft-card">
+            <div class="my-nft-art" style="background:${nft.gradient}">
+                
+                <img src="${nft.img}" style="width:100%;height:100%;object-fit:cover"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+
+                <div class="my-nft-art-fallback" style="display:none;filter:drop-shadow(0 0 22px ${nft.glow}90)">
+                    ${nft.emoji}
+                </div>
+
+                <div class="nft-art-shimmer"></div>
+                <div class="my-nft-owned-badge">Owned</div>
+            </div>
+
+            <div class="my-nft-info">
+                <div class="my-nft-title">${nft.title}</div>
+
+                <span class="rarity-badge r-${nft.rarity}">
+                    ${RARITY_LABEL[nft.rarity]}
+                </span>
+
+                <div class="my-nft-date">Получено: ${date}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
         function renderTasks() {
             if (!lastTasks.length) {
-                document.getElementById("tasks-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Нет доступных квестов</div>';
+                document.getElementById('tasks-list').innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span><p>Квестов нет</p></div>';
                 return;
             }
-            document.getElementById("tasks-list").innerHTML = lastTasks.map(t => {
-                const pct = Math.min(100, Math.round((t.progress / t.required) * 100));
-                let actionHtml = '';
-                if (t.claimed) {
-                    actionHtml = '<div class="done-badge">✓ Получено</div>';
-                } else if (t.done) {
-                    actionHtml = `<button class="claim-btn" onclick="claimQuest('${t.id}')">Забрать +${t.reward} SNC</button>`;
-                }
-                return `
-                    <div class="quest-card ${t.claimed ? 'claimed' : (t.done ? 'done' : '')}">
-                        <div class="quest-inner">
-                            <div class="quest-top">
-                                <div>
-                                    <p class="quest-title">${t.title}</p>
-                                    <p class="quest-desc">${t.description}</p>
-                                    ${actionHtml}
-                                </div>
-                                <div class="quest-reward-badge">+${t.reward.toLocaleString()} SNC</div>
+            document.getElementById('tasks-list').innerHTML = lastTasks.map(t => {
+                const pct = Math.min(100, t.required > 0 ? Math.round((t.progress / t.required) * 100) : 0);
+                let action = '';
+                if (t.claimed) action = '<div class="done-pill">✓ Получено</div>';
+                else if (t.done) action = `<button class="btn-claim" onclick="claimQuest('${t.id}')">✦ Забрать ${t.reward} SNC</button>`;
+                return `<div class="quest-card ${t.claimed ? 'claimed' : t.done ? 'done' : ''}">
+                    <div class="quest-inner">
+                        <div class="quest-header">
+                            <div style="flex:1">
+                                <div class="quest-title">${t.title}</div>
+                                <div class="quest-desc">${t.description}</div>
+                                ${!t.claimed ? `<div class="quest-progress-text">${t.progress} / ${t.required}</div>` : ''}
+                                ${action}
                             </div>
-                            ${!t.claimed ? `<div style="margin-top:12px;font-size:12px;color:var(--text-muted);font-weight:600;">${t.progress} / ${t.required}</div>` : ''}
+                            <div class="quest-reward cyan">+${t.reward.toLocaleString()}</div>
                         </div>
-                        <div class="quest-progress-bar">
-                            <div class="quest-progress-fill ${t.done ? 'done' : ''}" style="width:${pct}%"></div>
-                        </div>
+                        ${!t.claimed ? `<div class="progress-track" style="margin-top:10px"><div class="progress-fill ${t.done?'done':''}" style="width:${pct}%"></div></div>` : ''}
                     </div>
-                `;
+                </div>`;
             }).join('');
         }
 
         function renderDailyTasks() {
             if (!lastDailyTasks.length) {
-                document.getElementById("daily-list").innerHTML = '<div class="card" style="text-align:center;color:var(--text-muted);">Ежедневные задания недоступны</div>';
+                document.getElementById('daily-list').innerHTML = '<div class="empty-state"><p>Нет ежедневных заданий</p></div>';
                 return;
             }
-            document.getElementById("daily-list").innerHTML = lastDailyTasks.map(t => {
-                let actionHtml = '';
-                if (t.done) {
-                    actionHtml = '<div class="done-badge">✓ Выполнено</div>';
-                }
-                return `
-                    <div class="quest-card ${t.done ? 'done' : ''}">
-                        <div class="quest-inner">
-                            <div class="quest-top">
-                                <div>
-                                    <p class="quest-title">${t.title}</p>
-                                    <p class="quest-desc">${t.description}</p>
-                                    ${actionHtml}
-                                </div>
-                                <div class="quest-reward-badge golden">+${t.reward} SNC</div>
+            document.getElementById('daily-list').innerHTML = lastDailyTasks.map(t => {
+                const action = t.done ? '<div class="done-pill">✓ Выполнено</div>' : '';
+                return `<div class="quest-card ${t.done ? 'done' : ''}">
+                    <div class="quest-inner">
+                        <div class="quest-header">
+                            <div style="flex:1">
+                                <div class="quest-title">${t.title}</div>
+                                <div class="quest-desc">${t.description}</div>
+                                ${action}
                             </div>
+                            <div class="quest-reward gold">+${t.reward}</div>
                         </div>
-                        <div class="quest-progress-bar">
-                            <div class="quest-progress-fill ${t.done ? 'done' : ''}" style="width:${t.done ? 100 : 0}%"></div>
+                        <div class="progress-track" style="margin-top:10px">
+                            <div class="progress-fill ${t.done?'done':''}" style="width:${t.done?100:0}%"></div>
                         </div>
                     </div>
-                `;
+                </div>`;
             }).join('');
         }
 
         async function claimQuest(questId) {
             try {
-                const response = await fetch(`${SERVER_URL}/api/claim_quest/${username}/${questId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (response.ok) {
-                    const data = await response.json();
+                const r = await fetch(`${SERVER_URL}/api/claim_quest/${username}/${questId}`, { method: 'POST' });
+                if (r.ok) {
+                    const data = await r.json();
                     tg.HapticFeedback.notificationOccurred('success');
-                    tg.showAlert(`✅ Получено ${data.reward} SNC!`);
+                    showToast(`✦ Получено +${data.reward} SNC!`, 'success');
                     loadUserData();
                 } else {
-                    const err = await response.json();
-                    tg.showAlert("Ошибка: " + (err.detail || "Не удалось забрать награду"));
+                    const err = await r.json();
+                    showToast(err.detail || 'Ошибка', 'error');
                 }
-            } catch (e) {
-                tg.showAlert("Ошибка подключения.");
-            }
+            } catch (e) { showToast('Ошибка подключения', 'error'); }
         }
 
         async function completeDaily(questId) {
             try {
-                await fetch(`${SERVER_URL}/api/complete_daily/${username}/${questId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                await fetch(`${SERVER_URL}/api/complete_daily/${username}/${questId}`, { method: 'POST' });
             } catch (e) {}
         }
 
         async function loadLeaderboard() {
             try {
-                const listEl = document.getElementById("leaderboard-list");
-                const response = await fetch(`${SERVER_URL}/api/leaderboard`, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' }
-                });
-                if (!response.ok) throw new Error("Leaderboard Offline");
-                const data = await response.json();
-                const boardHtml = data.map((user, index) => {
-                    let rankIcon = index < 3 ? ['🏆','🥈','🥉'][index] : '#' + (index + 1);
-                    return `
-                        <div class="leader-row" style="${user.username === username ? 'border: 1px solid var(--primary);' : ''}">
-                            <div class="rank">${rankIcon}</div>
-                            <div class="username">@${user.username}</div>
-                            <div class="score">${user.balance.toLocaleString()}</div>
-                        </div>
-                    `;
-                }).join('');
-                listEl.innerHTML = boardHtml || "Список пуст.";
+                const r = await fetch(`${SERVER_URL}/api/leaderboard`, { headers: { 'Accept': 'application/json' } });
+                if (!r.ok) throw new Error();
+                const data = await r.json();
+                const icons = ['🏆','🥈','🥉'];
+                document.getElementById('leaderboard-list').innerHTML = data.length
+                    ? data.map((u, i) => `<div class="leader-row ${u.username === username ? 'me' : ''}">
+                        ${i < 3 ? `<div class="rank-icon">${icons[i]}</div>` : `<div class="rank-num">#${i+1}</div>`}
+                        <div class="leader-avatar">${u.username.slice(0,2).toUpperCase()}</div>
+                        <div class="leader-name">@${u.username}</div>
+                        <div class="leader-score">${u.balance.toLocaleString()}</div>
+                    </div>`).join('')
+                    : '<div class="empty-state"><p>Список пуст</p></div>';
             } catch (e) {
-                document.getElementById("leaderboard-list").innerHTML = '<div style="text-align:center;color:var(--text-muted);">Ошибка подключения к серверу</div>';
+                document.getElementById('leaderboard-list').innerHTML = '<div class="empty-state"><p>Ошибка загрузки</p></div>';
             }
         }
 
-        async function buyNFT(id, price, icon, title) {
-            if (ownedNFTs.includes(id)) {
-                tg.showAlert("Вы уже владеете этим артефактом.");
-                return;
-            }
-            if (currentSNC < price) {
-                tg.showAlert("Недостаточно средств на балансе.");
-                return;
-            }
-            tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (confirmed) => {
-                if (confirmed) {
-                    tg.HapticFeedback.impactOccurred('heavy');
-                    try {
-                        const response = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                        if (response.ok) {
-                            tg.showAlert(`${title} приобретен!`);
-                            loadUserData();
-                        } else {
-                            const err = await response.json();
-                            tg.showAlert("Ошибка: " + (err.detail || "Сервер отклонил запрос"));
-                        }
-                    } catch (e) {
-                        tg.showAlert("Ошибка подключения к серверу.");
-                    }
-                }
+        async function buyNFT(id, price, emoji, title) {
+         if (ownedNFTs[id]) {
+        showToast('Уже в арсенале', 'error');
+        return;
+    }
+
+    if (currentSNC < price) {
+        showToast('Недостаточно SNC', 'error');
+        return;
+    }
+
+    tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
+        if (!ok) return;
+
+        tg.HapticFeedback.impactOccurred('heavy');
+
+        try {
+            const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, {
+                method: 'POST'
             });
-        }
 
-        function renderInventory() {
-            const grid = document.getElementById("my-nfts-grid");
-            if (ownedNFTs.length === 0) {
-                grid.innerHTML = '<div class="card" style="grid-column:1/-1;text-align:center;color:var(--text-muted);">Инвентарь пуст</div>';
-                return;
+            if (r.ok) {
+                tg.HapticFeedback.notificationOccurred('success');
+
+                showToast(`${emoji} ${title} в арсенале!`, 'success');
+
+                ownedNFTs[id] = {
+                    date: Date.now()
+                };
+
+                await loadUserData();
+
+                renderShopNFTs();
+                renderInventory();
+
+            } else {
+                const e = await r.json();
+                showToast(e.detail || 'Ошибка', 'error');
             }
-            grid.innerHTML = ownedNFTs.map(nftId => {
-                const info = NFT_DATA[nftId] || { icon: '❄️', title: 'Артефакт', rarity: 'common' };
-                return `
-                    <div class="nft-card">
-                        <div class="owned-badge">Owned</div>
-                        <span class="nft-icon">${info.icon}</span>
-                        <p style="font-weight:800;margin:0;font-size:14px;">${info.title}</p>
-                        <span class="rarity-tag rarity-${info.rarity}">${RARITY_LABEL[info.rarity]}</span>
-                    </div>
-                `;
-            }).join('');
-        }
 
+        } catch (e) {
+            showToast('Ошибка подключения', 'error');
+        }
+    });
+}
         async function sendTransfer() {
-            const target = document.getElementById("target").value.trim().replace('@', '');
-            const amount = parseInt(document.getElementById("amount").value);
-            if (!target || isNaN(amount) || amount <= 0) {
-                tg.showAlert("Введите корректный @username и сумму.");
-                return;
-            }
-            if (amount > currentSNC) {
-                tg.showAlert("Недостаточно SNC для перевода.");
-                return;
-            }
-            tg.showConfirm(`Отправить ${amount.toLocaleString()} SNC пользователю @${target}?`, async (confirmed) => {
-                if (confirmed) {
-                    tg.HapticFeedback.impactOccurred('heavy');
-                    try {
-                        const response = await fetch(`${SERVER_URL}/api/transfer/${username}/${target}/${amount}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                        if (response.ok) {
-                            tg.HapticFeedback.notificationOccurred('success');
-                            tg.showAlert(`✅ Переведено ${amount.toLocaleString()} SNC → @${target}`);
-                            document.getElementById("target").value = '';
-                            document.getElementById("amount").value = '';
-                            await completeDaily('daily_transfer');
-                            loadUserData();
-                        } else {
-                            const err = await response.json();
-                            tg.showAlert("Ошибка: " + (err.detail || "Перевод не выполнен"));
-                        }
-                    } catch (e) {
-                        tg.showAlert("Ошибка подключения к серверу.");
+            const target = document.getElementById('target').value.trim().replace('@','');
+            const amount = parseInt(document.getElementById('amount').value);
+            if (!target || isNaN(amount) || amount <= 0) { showToast('Введи username и сумму', 'error'); return; }
+            if (amount > currentSNC) { showToast('Недостаточно SNC', 'error'); return; }
+            tg.showConfirm(`Отправить ${amount.toLocaleString()} SNC → @${target}?`, async (ok) => {
+                if (!ok) return;
+                tg.HapticFeedback.impactOccurred('medium');
+                try {
+                    const r = await fetch(`${SERVER_URL}/api/transfer/${username}/${target}/${amount}`, { method: 'POST' });
+                    if (r.ok) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                        showToast(`✦ Отправлено ${amount.toLocaleString()} SNC → @${target}`, 'success');
+                        document.getElementById('target').value = '';
+                        document.getElementById('amount').value = '';
+                        await completeDaily('daily_transfer');
+                        loadUserData();
+                    } else {
+                        const e = await r.json();
+                        showToast(e.detail || 'Ошибка перевода', 'error');
                     }
-                }
+                } catch (e) { showToast('Ошибка подключения', 'error'); }
             });
         }
 
         async function buySNC(amountSnc, amountStars) {
-            tg.HapticFeedback.impactOccurred('heavy');
+            tg.HapticFeedback.impactOccurred('medium');
             try {
-                const response = await fetch(`${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    headers: { 'Accept': 'application/json' }
-                });
-                if (!response.ok) throw new Error("Invoice Generation Failed");
-                const data = await response.json();
+                const r = await fetch(`${SERVER_URL}/api/buy_snc/${username}/${amountSnc}/${amountStars}`, { mode: 'cors', headers: { 'Accept': 'application/json' } });
+                if (!r.ok) throw new Error();
+                const data = await r.json();
                 if (data.invoice_url) {
-                    tg.openInvoice(data.invoice_url, function(status) {
+                    tg.openInvoice(data.invoice_url, (status) => {
                         if (status === 'paid') {
                             tg.HapticFeedback.notificationOccurred('success');
-                            tg.showAlert("Платеж прошел! Баланс скоро обновится.");
+                            showToast('✦ Платёж прошёл! Баланс обновится', 'success');
                             setTimeout(loadUserData, 3000);
                         }
                     });
                 }
-            } catch (e) {
-                tg.showAlert("Ошибка шлюза. Проверьте соединение.");
-            }
+            } catch (e) { showToast('Ошибка шлюза', 'error'); }
         }
+
+        (function initSnow() {
+            const canvas = document.getElementById('snow');
+            const ctx = canvas.getContext('2d');
+            let W = canvas.width = window.innerWidth;
+            let H = canvas.height = window.innerHeight;
+            const flakes = Array.from({length: 65}, () => ({
+                x: Math.random() * W,
+                y: Math.random() * H,
+                r: Math.random() * 2 + 0.4,
+                speed: Math.random() * 0.4 + 0.08,
+                drift: Math.random() * 0.25 - 0.125,
+                opacity: Math.random() * 0.35 + 0.08
+            }));
+            function draw() {
+                ctx.clearRect(0, 0, W, H);
+                flakes.forEach(f => {
+                    ctx.beginPath();
+                    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(190,235,255,${f.opacity})`;
+                    ctx.fill();
+                    f.y += f.speed;
+                    f.x += f.drift;
+                    if (f.y > H + 5) { f.y = -5; f.x = Math.random() * W; }
+                    if (f.x > W + 5) f.x = -5;
+                    if (f.x < -5) f.x = W + 5;
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+            window.addEventListener('resize', () => {
+                W = canvas.width = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            });
+        })();
 
         completeDaily('daily_login');
         loadUserData();
+        loadPepeStock();
+        renderShopNFTs();
         setInterval(loadUserData, 15000);
     </script>
 </body>
