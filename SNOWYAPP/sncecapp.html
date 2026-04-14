@@ -348,6 +348,19 @@
             0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
             50%      { box-shadow: 0 0 0 4px rgba(255,215,0,0); }
         }
+        
+        .nft-exclusive-tag {
+            position: absolute; top: 8px; left: 8px;
+            background: linear-gradient(135deg, #ff00e5, #6e00ff);
+            color: #fff;
+            font-family: 'Syne', sans-serif;
+            font-size: 8px; font-weight: 800;
+            padding: 3px 8px; border-radius: 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            z-index: 3;
+            box-shadow: 0 0 10px rgba(255,0,229,0.5);
+        }
+
         .nft-stock-bar {
             height: 2px;
             background: rgba(255,255,255,0.06);
@@ -947,14 +960,15 @@
         document.getElementById('header-username').textContent = '@' + username;
 
         const NFT_DATA = {
-            'bear':     { emoji: '🐻', title: 'Мишка снови',         price: 5000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
-            'heart':    { emoji: '💝', title: 'Сердце',              price: 6500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
-            'icecube':  { emoji: '🧊', title: 'Кубик льда',          price: 7500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' },
-            'rose':     { emoji: '🌹', title: 'Роза',                price: 7700,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
-            'coin':     { emoji: '🪙', title: 'Монета SNC',          price: 10000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
-            'penguin':  { emoji: '🐧', title: 'Пингвин',             price: 12500, rarity: 'epic',   gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
-            'frozenheart': { emoji: '💙', title: 'Замороженное сердце',      price: 14000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
-            'pepe':     { emoji: '🐸', title: 'Лягушка Пепе',        price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
+            'bear':        { emoji: '🐻', title: 'Мишка снови',         price: 5000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
+            'heart':       { emoji: '💝', title: 'Сердце',              price: 6500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
+            'icecube':     { emoji: '🧊', title: 'Кубик льда',          price: 7500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' },
+            'rose':        { emoji: '🌹', title: 'Роза',                price: 7700,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
+            'coin':        { emoji: '🪙', title: 'Монета SNC',          price: 10000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
+            'penguin':     { emoji: '🐧', title: 'Пингвин',             price: 12500, rarity: 'epic',   gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
+            'frozenheart': { emoji: '💙', title: 'Замороженное сердце', price: 14000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
+            'pepe':        { emoji: '🐸', title: 'Лягушка Пепе',        price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
+            'kefir':       { emoji: '🥛', title: 'Кефир',               price: 0,     rarity: 'legend', gradient: 'linear-gradient(145deg,#1f2128,#e0e0e0)', glow: '#ffffff', exclusive: true }
         };
 
         const RARITY_LABEL = { common: 'Обычный', rare: 'Редкий', epic: 'Эпик', legend: 'Легенда' };
@@ -1168,7 +1182,10 @@
 
         function renderShopNFTs() {
             const grid = document.getElementById('shop-nft-grid');
-            grid.innerHTML = Object.entries(NFT_DATA).map(([id, nft]) => {
+            
+            grid.innerHTML = Object.entries(NFT_DATA)
+                .filter(([id, nft]) => !nft.exclusive)
+                .map(([id, nft]) => {
                 const owned = ownedNFTs.includes(id);
                 const stockLeft = nft.limited ? pepeStock : null;
                 const soldOut = nft.limited && stockLeft <= 0;
@@ -1214,6 +1231,7 @@
                     <div class="my-nft-art" style="background:${nft.gradient}">
                         <div class="my-nft-art-fallback" style="filter:drop-shadow(0 0 22px ${nft.glow}90)">${nft.emoji}</div>
                         <div class="nft-art-shimmer"></div>
+                        ${nft.exclusive ? '<div class="nft-exclusive-tag">💎 Exclusive</div>' : ''}
                         ${isListed 
                             ? '<div class="my-nft-owned-badge" style="background:var(--gold);color:#000;">На рынке</div>' 
                             : '<div class="my-nft-owned-badge">Owned</div>'}

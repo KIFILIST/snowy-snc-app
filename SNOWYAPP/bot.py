@@ -309,7 +309,6 @@ async def api_get_user(username: str):
             "daily_tasks": daily_tasks
         }
     except Exception as e:
-        print(f"API Error (User): {e}")
         raise HTTPException(status_code=500, detail="Database connection error")
 
 @app.get("/api/market")
@@ -320,7 +319,6 @@ async def api_get_market():
             rows = await conn.fetch("SELECT id, seller_username AS seller, nft_id, price FROM market_listings ORDER BY created_at DESC")
             return [dict(r) for r in rows]
     except Exception as e:
-        print(f"API Error (Market): {e}")
         raise HTTPException(status_code=500, detail="Database error")
 
 @app.post("/api/market/list/{username}/{nft_id}/{price}")
@@ -344,7 +342,6 @@ async def api_market_list(username: str, nft_id: str, price: int):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Market List Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/market/buy/{listing_id}/{username}")
@@ -383,7 +380,6 @@ async def api_market_buy(listing_id: int, username: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Market Buy Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/market/cancel/{listing_id}/{username}")
@@ -401,7 +397,6 @@ async def api_market_cancel(listing_id: int, username: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Market Cancel Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/claim_quest/{username}/{quest_id}")
@@ -455,7 +450,6 @@ async def api_claim_quest(username: str, quest_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Claim quest error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/complete_daily/{username}/{quest_id}")
@@ -471,7 +465,6 @@ async def api_complete_daily(username: str, quest_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Complete daily error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/transfer/{from_user}/{to_user}/{amount}")
@@ -503,11 +496,12 @@ async def api_transfer(from_user: str, to_user: str, amount: int):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Transfer error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/buy_nft/{username}/{nft_id}/{price}")
 async def api_buy_nft(username: str, nft_id: str, price: int):
+    if nft_id.lower() == "kefir":
+        raise HTTPException(status_code=403, detail="This artifact cannot be purchased from the store")
     try:
         pool = await get_db()
         async with pool.acquire() as conn:
@@ -526,7 +520,6 @@ async def api_buy_nft(username: str, nft_id: str, price: int):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"NFT Purchase Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/leaderboard")
@@ -537,7 +530,6 @@ async def api_get_leaderboard():
             rows = await conn.fetch("SELECT username, balance FROM users ORDER BY balance DESC LIMIT 10")
             return [dict(r) for r in rows]
     except Exception as e:
-        print(f"API Error (Leaderboard): {e}")
         raise HTTPException(status_code=500, detail="Database error")
 
 @app.get("/api/buy_snc/{username}/{amount_snc}/{amount_stars}")
@@ -545,7 +537,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
     try:
         prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=int(amount_stars))]
         invoice_link = await bot.create_invoice_link(
-            title="Донат-набор",
+            title="Монетки",
             description=f"Приобретение {amount_snc} SNC для аккаунта {username}",
             payload=json.dumps({"user": username, "amount": amount_snc}),
             provider_token="",
@@ -554,7 +546,6 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
         )
         return {"invoice_url": invoice_link}
     except Exception as e:
-        print(f"PAYMENT API Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @dp.message(Command("start"))
@@ -669,6 +660,35 @@ async def cmd_addsnc(message: types.Message):
             new_bal = await update_balance(target, amount)
             await message.answer(f"✅ Операция завершена.\nАккаунт: @{target}\nНовый баланс: {new_bal} SNC")
 
+@dp.message(Command("givenft"))
+async def cmd_givenft(message: types.Message):
+    if message.chat.type != "private" or message.from_user.id not in ADMIN_IDS:
+        return
+        
+    pattern = r"^/givenft\s+@?(\w+)\s+(\w+)$"
+    match = re.match(pattern, message.text or "")
+    
+    if match:
+        target = match.group(1).lower()
+        nft_id = match.group(2).lower()
+        
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            exists = await conn.fetchrow("SELECT username FROM users WHERE username = $1", target)
+            if not exists:
+                await message.answer(f"❌ Пользователь @{target} не найден.")
+                return
+                
+            await conn.execute("""
+                INSERT INTO inventory (username, nft_id)
+                VALUES ($1, $2)
+                ON CONFLICT (username, nft_id) DO NOTHING
+            """, target, nft_id)
+            
+        await message.answer(f"✅ Артефакт '{nft_id}' успешно выдан @{target}.")
+    else:
+        await message.answer("⚠️ Формат: `/givenft @username nft_id`", parse_mode="Markdown")
+
 @dp.message(Command("starsrefund"))
 async def cmd_starsrefund(message: types.Message):
     if message.from_user.id in ADMIN_IDS and message.chat.type == "private":
@@ -719,8 +739,8 @@ async def cmd_starsrefund(message: types.Message):
                     f"`/starsrefund @{username} <количество_звёзд>`",
                     parse_mode="Markdown"
                 )
-            except Exception as e:
-                print(f"Failed to notify admin {admin_id}: {e}")
+            except Exception:
+                pass
 
 @dp.message(Command("starsrefund_revoke"))
 async def cmd_starsrefund_revoke(message: types.Message):
@@ -834,8 +854,7 @@ async def run_polling():
         try:
             await bot.delete_webhook(drop_pending_updates=True)
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-        except Exception as e:
-            print(f"Polling error: {e}, restarting in 5s...")
+        except Exception:
             await asyncio.sleep(5)
 
 async def start_services():
