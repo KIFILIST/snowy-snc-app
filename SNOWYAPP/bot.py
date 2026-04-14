@@ -41,89 +41,26 @@ app.add_middleware(
 )
 
 STATIC_QUESTS = [
-    {
-        "id": "ref_1",
-        "title": "Первый призыв",
-        "description": "Пригласи 1 друга по реферальной ссылке",
-        "reward": 25,
-        "type": "referral",
-        "required": 1
-    },
-    {
-        "id": "ref_3",
-        "title": "Малый отряд",
-        "description": "Пригласи 3 друзей по реферальной ссылке",
-        "reward": 60,
-        "type": "referral",
-        "required": 3
-    },
-    {
-        "id": "ref_5",
-        "title": "Элитное звено",
-        "description": "Пригласи 5 друзей по реферальной ссылке",
-        "reward": 120,
-        "type": "referral",
-        "required": 5
-    },
-    {
-        "id": "ref_10",
-        "title": "Командир роты",
-        "description": "Пригласи 10 друзей по реферальной ссылке",
-        "reward": 300,
-        "type": "referral",
-        "required": 10
-    },
-    {
-        "id": "first_transfer",
-        "title": "Первый перевод",
-        "description": "Отправь SNC другому пользователю",
-        "reward": 10,
-        "type": "transfer",
-        "required": 1
-    },
-    {
-        "id": "first_nft",
-        "title": "Коллекционер",
-        "description": "Купи свой первый артефакт",
-        "reward": 150,
-        "type": "nft",
-        "required": 1
-    },
-    {
-        "id": "first_purchase",
-        "title": "Инвестор",
-        "description": "Пополни баланс через Звездную Биржу.",
-        "reward": 150,
-        "type": "purchase",
-        "required": 1
-    },
-    {
-        "id": "transfer_5",
-        "title": "Казначей штаба",
-        "description": "Сделай 5 переводов",
-        "reward": 40,
-        "type": "transfer",
-        "required": 5
-    },
-    {
-        "id": "nft_3",
-        "title": "Хранитель реликвий",
-        "description": "Собери 5 артефактов",
-        "reward": 1000,
-        "type": "nft",
-        "required": 5
-    },
+    {"id": "ref_1", "title": "Первый призыв", "description": "Пригласи 1 друга по реферальной ссылке", "reward": 25, "type": "referral", "required": 1},
+    {"id": "ref_3", "title": "Малый отряд", "description": "Пригласи 3 друзей по реферальной ссылке", "reward": 60, "type": "referral", "required": 3},
+    {"id": "ref_5", "title": "Элитное звено", "description": "Пригласи 5 друзей по реферальной ссылке", "reward": 120, "type": "referral", "required": 5},
+    {"id": "ref_10", "title": "Командир роты", "description": "Пригласи 10 друзей по реферальной ссылке", "reward": 300, "type": "referral", "required": 10},
+    {"id": "first_transfer", "title": "Первый перевод", "description": "Отправь SNC другому пользователю", "reward": 10, "type": "transfer", "required": 1},
+    {"id": "first_nft", "title": "Коллекционер", "description": "Купи свой первый артефакт", "reward": 150, "type": "nft", "required": 1},
+    {"id": "first_purchase", "title": "Инвестор", "description": "Пополни баланс через Звездную Биржу.", "reward": 150, "type": "purchase", "required": 1},
+    {"id": "transfer_5", "title": "Казначей штаба", "description": "Сделай 5 переводов", "reward": 40, "type": "transfer", "required": 5},
+    {"id": "nft_3", "title": "Хранитель реликвий", "description": "Собери 5 артефактов", "reward": 1000, "type": "nft", "required": 5},
 ]
 
 DAILY_POOL = [
-    {"id": "daily_login",     "title": "Явка",             "description": "Открой приложение сегодня",              "reward": 2},
-    {"id": "daily_leaderboard","title": "Разведка",         "description": "Загляни в таблицу лидеров",             "reward": 1},
-    {"id": "daily_shop",      "title": "Обход рынка",       "description": "Открой вкладку Биржа",                  "reward": 1},
-    {"id": "daily_transfer",  "title": "Связной",           "description": "Отправь перевод кому-нибудь сегодня",   "reward": 10},
-    {"id": "daily_bot",       "title": "Сеанс связи",       "description": "Напиши боту любое сообщение",           "reward": 2},
-    {"id": "daily_nfts",      "title": "Инвентаризация",    "description": "Открой вкладку Мои NFT",                "reward": 1},
-    {"id": "daily_check_bal", "title": "Аудит счёта",       "description": "Проверь баланс на главной странице",    "reward": 1},
-    {"id": "daily_invite",    "title": "Вербовка",          "description": "Пригласи кого-нибудь в бот сегодня",    "reward": 10},
+    {"id": "daily_login", "title": "Явка", "description": "Открой приложение сегодня", "reward": 2},
+    {"id": "daily_leaderboard", "title": "Разведка", "description": "Загляни в таблицу лидеров", "reward": 1},
+    {"id": "daily_shop", "title": "Обход рынка", "description": "Открой вкладку Биржа", "reward": 1},
+    {"id": "daily_transfer", "title": "Связной", "description": "Отправь перевод кому-нибудь сегодня", "reward": 10},
+    {"id": "daily_bot", "title": "Сеанс связи", "description": "Напиши боту любое сообщение", "reward": 2},
+    {"id": "daily_nfts", "title": "Инвентаризация", "description": "Открой вкладку Мои NFT", "reward": 1},
+    {"id": "daily_check_bal", "title": "Аудит счёта", "description": "Проверь баланс на главной странице", "reward": 1},
+    {"id": "daily_invite", "title": "Вербовка", "description": "Пригласи кого-нибудь в бот сегодня", "reward": 10},
 ]
 
 async def get_db():
@@ -174,6 +111,13 @@ async def init_db():
                 from_user TEXT,
                 to_user TEXT,
                 amount INTEGER,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS market_listings (
+                id SERIAL PRIMARY KEY,
+                seller_username TEXT REFERENCES users(username),
+                nft_id TEXT,
+                price INTEGER CHECK (price > 0),
                 created_at TIMESTAMP DEFAULT NOW()
             );
         """)
@@ -304,6 +248,8 @@ async def api_get_user(username: str):
             )
             ref_row = await conn.fetchrow("SELECT referral_count FROM users WHERE username = $1", username.lower())
             ref_count = ref_row['referral_count'] if ref_row else 0
+            list_rows = await conn.fetch("SELECT nft_id FROM market_listings WHERE seller_username = $1", username.lower())
+            listed_nfts = [r['nft_id'] for r in list_rows]
 
         progress_map = await get_quest_progress(username)
 
@@ -358,12 +304,105 @@ async def api_get_user(username: str):
             "username": username,
             "balance": balance,
             "inventory": inventory,
+            "listed_nfts": listed_nfts,
             "tasks": static_tasks,
             "daily_tasks": daily_tasks
         }
     except Exception as e:
         print(f"API Error (User): {e}")
         raise HTTPException(status_code=500, detail="Database connection error")
+
+@app.get("/api/market")
+async def api_get_market():
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch("SELECT id, seller_username AS seller, nft_id, price FROM market_listings ORDER BY created_at DESC")
+            return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"API Error (Market): {e}")
+        raise HTTPException(status_code=500, detail="Database error")
+
+@app.post("/api/market/list/{username}/{nft_id}/{price}")
+async def api_market_list(username: str, nft_id: str, price: int):
+    if price <= 0:
+        raise HTTPException(status_code=400, detail="Invalid price")
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            owns = await conn.fetchval("SELECT 1 FROM inventory WHERE username = $1 AND nft_id = $2", username.lower(), nft_id)
+            if not owns:
+                raise HTTPException(status_code=400, detail="NFT not owned")
+            already_listed = await conn.fetchval("SELECT 1 FROM market_listings WHERE seller_username = $1 AND nft_id = $2", username.lower(), nft_id)
+            if already_listed:
+                raise HTTPException(status_code=400, detail="NFT already listed")
+            await conn.execute(
+                "INSERT INTO market_listings (seller_username, nft_id, price) VALUES ($1, $2, $3)",
+                username.lower(), nft_id, price
+            )
+            return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Market List Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/market/buy/{listing_id}/{username}")
+async def api_market_buy(listing_id: int, username: str):
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            buyer = username.lower()
+            listing = await conn.fetchrow("SELECT seller_username, nft_id, price FROM market_listings WHERE id = $1", listing_id)
+            if not listing:
+                raise HTTPException(status_code=404, detail="Listing not found")
+            
+            seller = listing['seller_username']
+            price = listing['price']
+            nft_id = listing['nft_id']
+
+            if buyer == seller:
+                raise HTTPException(status_code=400, detail="Cannot buy your own listing")
+            
+            buyer_bal = await conn.fetchval("SELECT balance FROM users WHERE username = $1", buyer)
+            if buyer_bal is None or buyer_bal < price:
+                raise HTTPException(status_code=400, detail="Insufficient balance")
+
+            already_owns = await conn.fetchval("SELECT 1 FROM inventory WHERE username = $1 AND nft_id = $2", buyer, nft_id)
+            if already_owns:
+                raise HTTPException(status_code=400, detail="You already own this NFT")
+
+            async with conn.transaction():
+                await conn.execute("UPDATE users SET balance = balance - $1 WHERE username = $2", price, buyer)
+                await conn.execute("UPDATE users SET balance = balance + $1 WHERE username = $2", price, seller)
+                await conn.execute("UPDATE inventory SET username = $1 WHERE username = $2 AND nft_id = $3", buyer, seller, nft_id)
+                await conn.execute("DELETE FROM market_listings WHERE id = $1", listing_id)
+                
+            new_bal = await conn.fetchval("SELECT balance FROM users WHERE username = $1", buyer)
+            return {"status": "success", "balance": new_bal}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Market Buy Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/market/cancel/{listing_id}/{username}")
+async def api_market_cancel(listing_id: int, username: str):
+    try:
+        pool = await get_db()
+        async with pool.acquire() as conn:
+            listing = await conn.fetchrow("SELECT seller_username FROM market_listings WHERE id = $1", listing_id)
+            if not listing:
+                raise HTTPException(status_code=404, detail="Listing not found")
+            if listing['seller_username'] != username.lower():
+                raise HTTPException(status_code=403, detail="Forbidden")
+            await conn.execute("DELETE FROM market_listings WHERE id = $1", listing_id)
+            return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Market Cancel Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/claim_quest/{username}/{quest_id}")
 async def api_claim_quest(username: str, quest_id: str):
@@ -506,7 +545,7 @@ async def api_create_invoice(username: str, amount_snc: int, amount_stars: int):
     try:
         prices = [LabeledPrice(label=f"{amount_snc} SNC", amount=int(amount_stars))]
         invoice_link = await bot.create_invoice_link(
-            title="Пакет монеток",
+            title="Донат-набор",
             description=f"Приобретение {amount_snc} SNC для аккаунта {username}",
             payload=json.dumps({"user": username, "amount": amount_snc}),
             provider_token="",
@@ -562,7 +601,11 @@ async def cmd_start(message: types.Message):
             "Ваш статус подтвержден.\n"
             "Управление балансом:\n"
             "• ЛС: `@username +100` или `@username -50`\n"
-            "• Группы: `/addsnc @username 100`"
+            "---------------------------------\n\n"
+            f"👋 Приветствуем, *{username}*!\n\n"
+            f"Текущие активы: *{await check_user(username)}* SNC ❄️\n\n"
+            f"🔗 Ваша реферальная ссылка:\n`https://t.me/{(await bot.get_me()).username}?start=ref_{username}`\n"
+            f"За каждого приглашённого — *300 SNC*"
         )
         await message.answer(msg, parse_mode="Markdown", reply_markup=get_keyboard())
     else:
@@ -705,16 +748,8 @@ async def cmd_starsrefund_revoke(message: types.Message):
         if not user_row:
             await message.answer(f"❌ Пользователь @{target_username} не найден.")
             return
-        transfer_rows = await conn.fetch("""
-            SELECT amount FROM transfers WHERE to_user = $1
-            AND created_at > NOW() - INTERVAL '30 days'
-            ORDER BY created_at DESC LIMIT 1
-        """, target_username)
 
     snc_to_remove = 0
-    for row in await pool.acquire().__aenter__() if False else []:
-        pass
-
     async with pool.acquire() as conn:
         last_purchase = await conn.fetchrow("""
             SELECT amount FROM transfers WHERE to_user = $1

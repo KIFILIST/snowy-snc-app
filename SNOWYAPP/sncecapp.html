@@ -301,10 +301,6 @@
             display: flex; align-items: center; justify-content: center;
             position: relative; overflow: hidden;
         }
-        .nft-art img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-        }
         .nft-art-fallback {
             font-size: 62px;
             filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6));
@@ -337,7 +333,6 @@
             text-transform: uppercase; letter-spacing: 0.5px;
             z-index: 3;
         }
-
         .nft-limited-tag {
             position: absolute; top: 8px; left: 8px;
             background: linear-gradient(135deg, rgba(255,215,0,0.92), rgba(255,160,0,0.92));
@@ -353,7 +348,6 @@
             0%,100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
             50%      { box-shadow: 0 0 0 4px rgba(255,215,0,0); }
         }
-
         .nft-stock-bar {
             height: 2px;
             background: rgba(255,255,255,0.06);
@@ -506,7 +500,6 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
             animation: shine 2.5s ease-in-out infinite;
         }
-        @keyframes shine { 0%{left:-100%} 100%{left:200%} }
 
         .done-pill {
             display: inline-flex; align-items: center; gap: 5px;
@@ -529,6 +522,126 @@
             border: 1px solid var(--border);
         }
 
+        .market-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        
+        .btn-add-lot { 
+            padding: 8px 14px; border-radius: 12px; 
+            border: 1px solid rgba(0,229,255,0.3); 
+            background: rgba(0,229,255,0.1); 
+            color: var(--primary); 
+            font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 800; 
+            cursor: pointer; transition: all 0.25s; 
+            text-transform: uppercase; letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .btn-add-lot:active { transform: scale(0.95); background: rgba(0,229,255,0.2); }
+        
+        .market-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        .listing-card { 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: 22px; 
+            overflow: hidden; 
+            display: flex; flex-direction: column; 
+            transition: all 0.25s; 
+        }
+        .listing-card:active { transform: scale(0.97); }
+        .listing-card.mine { border-color: rgba(0,229,255,0.3); }
+        
+        .listing-nft-area { 
+            padding: 22px 10px 14px; 
+            text-align: center; 
+            background: radial-gradient(ellipse at top, rgba(0,229,255,0.06), transparent 70%); 
+            position: relative;
+        }
+        .listing-nft-icon { 
+            font-size: 42px; display: block; margin-bottom: 10px; 
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); 
+            animation: floatNFT 3.5s ease-in-out infinite;
+        }
+        .listing-nft-name { 
+            font-family: 'Syne', sans-serif; font-size: 12px; 
+            font-weight: 800; margin-bottom: 6px; 
+        }
+        
+        .listing-footer { 
+            padding: 12px; border-top: 1px solid var(--border); 
+            background: rgba(6,8,16,0.6); 
+        }
+        .listing-seller { 
+            font-size: 11px; color: var(--muted); font-weight: 600; 
+            margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+        }
+        .listing-price { 
+            font-family: 'Syne', sans-serif; font-size: 14px; 
+            font-weight: 800; color: var(--primary); margin-bottom: 10px; 
+        }
+        
+        .btn-buy { 
+            width: 100%; padding: 10px; border-radius: 12px; border: none; 
+            background: linear-gradient(135deg, var(--secondary), var(--primary)); 
+            color: white; font-family: 'Syne', sans-serif; font-size: 11px; 
+            font-weight: 800; cursor: pointer; transition: all 0.2s; 
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-buy:active { transform: scale(0.96); }
+        
+        .btn-cancel { 
+            width: 100%; padding: 10px; border-radius: 12px; 
+            border: 1px solid rgba(255,80,80,0.3); background: rgba(255,80,80,0.1); 
+            color: #ff6060; font-family: 'Syne', sans-serif; font-size: 11px; 
+            font-weight: 800; cursor: pointer; transition: all 0.2s; 
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .btn-cancel:active { transform: scale(0.96); background: rgba(255,80,80,0.15); }
+
+        .empty-market { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--muted); }
+        .empty-market span { font-size: 38px; margin-bottom: 12px; display: block; opacity: 0.45; }
+        .empty-market p { font-size: 14px; font-weight: 600; }
+
+        .sheet-overlay { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); 
+            z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.3s; 
+        }
+        .sheet-overlay.open { opacity: 1; pointer-events: all; }
+        
+        .sheet { 
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 2001; 
+            background: var(--bg); border-top: 1px solid rgba(0,229,255,0.2); 
+            border-radius: 32px 32px 0 0; padding: 0 0 40px; 
+            transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); 
+            max-height: 85vh; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,229,255,0.1); 
+        }
+        .sheet.open { transform: translateY(0); }
+        
+        .sheet-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 16px auto 24px; }
+        .sheet-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; text-align: center; margin-bottom: 20px; color: var(--text); }
+        
+        .nft-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 20px; }
+        
+        .nft-pick-card { 
+            background: var(--surface); border: 1px solid var(--border); 
+            border-radius: 20px; padding: 16px 10px; text-align: center; 
+            cursor: pointer; transition: all 0.2s; 
+        }
+        .nft-pick-card.selected { 
+            border-color: var(--primary); background: rgba(0,229,255,0.1); 
+            box-shadow: 0 0 20px rgba(0,229,255,0.15); 
+        }
+        .nft-pick-card:active { transform: scale(0.95); }
+        
+        .nft-pick-icon { font-size: 38px; display: block; margin-bottom: 8px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+        .nft-pick-name { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 800; margin-bottom: 4px; }
+        .nft-pick-base { font-size: 10px; color: var(--muted); font-weight: 600; }
+        
+        .sheet-price-section { padding: 0 20px; }
+        .sheet-price-label { 
+            font-family: 'Syne', sans-serif; font-size: 12px; 
+            color: var(--muted); font-weight: 700; margin-bottom: 8px; 
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
         .my-nft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         .my-nft-card {
@@ -543,7 +656,6 @@
             display: flex; align-items: center; justify-content: center;
             position: relative; overflow: hidden;
         }
-        .my-nft-art img { width: 100%; height: 100%; object-fit: cover; }
         .my-nft-art-fallback {
             font-size: 60px;
             filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5));
@@ -640,6 +752,20 @@
     <canvas id="snow"></canvas>
     <div id="toast" class="toast"></div>
 
+    <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+    <div class="sheet" id="list-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Выбери артефакт для продажи</div>
+        <div class="nft-picker" id="nft-picker"></div>
+        <div class="sheet-price-section">
+            <div class="sheet-price-label">Цена (SNC)</div>
+            <div class="input-wrap">
+                <input type="number" id="list-price" placeholder="Введи цену">
+            </div>
+            <button class="btn-primary" onclick="submitListing()" style="margin-top:4px;">Выставить на продажу →</button>
+        </div>
+    </div>
+
     <div class="page">
         <div class="header">
             <div class="balance-label">Капитал</div>
@@ -690,6 +816,16 @@
             <div class="section-title">Квесты штаба</div>
             <div id="tasks-list">
                 <div class="empty-state"><span class="empty-icon loading-dots">Загрузка</span></div>
+            </div>
+        </div>
+
+        <div id="tab-market" class="container tab-content">
+            <div class="market-header">
+                <div class="section-title" style="margin:0;">Рынок NFT</div>
+                <button class="btn-add-lot" onclick="openListSheet()">+ Добавить лот</button>
+            </div>
+            <div class="market-grid" id="market-grid">
+                <div class="empty-market"><span class="empty-icon">🏪</span><p class="loading-dots">Загрузка лотов</p></div>
             </div>
         </div>
 
@@ -777,6 +913,10 @@
             <span class="nav-icon">🎯</span>
             <span class="nav-label">Квесты</span>
         </div>
+        <div class="nav-item" id="nav-market" onclick="switchTab('market')">
+            <span class="nav-icon">🏪</span>
+            <span class="nav-label">Рынок</span>
+        </div>
         <div class="nav-item" id="nav-shop" onclick="switchTab('shop')">
             <span class="nav-icon">⭐</span>
             <span class="nav-label">Биржа</span>
@@ -784,10 +924,6 @@
         <div class="nav-item" id="nav-leaderboard" onclick="switchTab('leaderboard')">
             <span class="nav-icon">👑</span>
             <span class="nav-label">Топ</span>
-        </div>
-        <div class="nav-item" id="nav-nfts" onclick="switchTab('nfts')">
-            <span class="nav-icon">💎</span>
-            <span class="nav-label">NFT</span>
         </div>
     </nav>
 
@@ -802,31 +938,32 @@
         let username = (tg.initDataUnsafe?.user?.username || `id_${tg.initDataUnsafe?.user?.id || 'unknown'}`).toLowerCase();
         let currentSNC = 0;
         let ownedNFTs = [];
+        let listedNFTs = [];
         let lastTasks = [];
         let lastDailyTasks = [];
+        let selectedNFTId = null;
         let pepeStock = 50;
 
         document.getElementById('header-username').textContent = '@' + username;
 
         const NFT_DATA = {
-            bear:        { emoji: '🐻', title: 'Мишка снови',    price: 5000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
-            rose:        { emoji: '🌹', title: 'Роза',            price: 7700,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
-            heart:       { emoji: '💝', title: 'Сердце',          price: 6500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
-            coin:        { emoji: '🪙', title: 'Монета SNC',      price: 10000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
-            pepe:        { emoji: '🐸', title: 'Лягушка Пепе',   price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
-            penguin:     { emoji: '🐧', title: 'Пингвин',         price: 12500, rarity: 'epic',   gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
-            snowflake:   { emoji: '❄️', title: 'Снежинка',       price: 4000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1a22,#0d2030)', glow: '#a8e6ff' },
-            frozenheart: { emoji: '💙', title: 'Frozen Heart',    price: 14000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
-            icecube:     { emoji: '🧊', title: 'Кубик льда',      price: 7500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' },
+            'bear':     { emoji: '🐻', title: 'Мишка снови',         price: 5000,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#1a2a3a,#2a3a5a)', glow: '#a8d8ea' },
+            'heart':    { emoji: '💝', title: 'Сердце',              price: 6500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a2a,#3a1040)', glow: '#ff80ff' },
+            'icecube':  { emoji: '🧊', title: 'Кубик льда',          price: 7500,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#0a1820,#0e2030)', glow: '#89f7fe' },
+            'rose':     { emoji: '🌹', title: 'Роза',                price: 7700,  rarity: 'rare',   gradient: 'linear-gradient(145deg,#2a0a1a,#4a1030)', glow: '#ff6b9d' },
+            'coin':     { emoji: '🪙', title: 'Монета SNC',          price: 10000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#2a1a00,#3a2a00)', glow: '#ffd700' },
+            'penguin':  { emoji: '🐧', title: 'Пингвин',             price: 12500, rarity: 'epic',   gradient: 'linear-gradient(145deg,#0a1a2a,#102038)', glow: '#74b9ff' },
+            'frozenheart': { emoji: '💙', title: 'Замороженное сердце',      price: 14000, rarity: 'epic',   gradient: 'linear-gradient(145deg,#061426,#0a1e40)', glow: '#4facfe' },
+            'pepe':     { emoji: '🐸', title: 'Лягушка Пепе',        price: 20000, rarity: 'legend', gradient: 'linear-gradient(145deg,#0a1a0a,#1a3010)', glow: '#6ab04c', limited: true, totalStock: 50 },
         };
 
         const RARITY_LABEL = { common: 'Обычный', rare: 'Редкий', epic: 'Эпик', legend: 'Легенда' };
 
         let toastTimer = null;
-        function showToast(msg, type) {
+        function showToast(msg, type = '') {
             const t = document.getElementById('toast');
             t.textContent = msg;
-            t.className = 'toast show ' + (type || '');
+            t.className = 'toast show ' + type;
             if (toastTimer) clearTimeout(toastTimer);
             toastTimer = setTimeout(() => { t.className = 'toast'; }, 3000);
         }
@@ -856,11 +993,14 @@
             document.getElementById('tab-' + tabId).classList.add('active');
             const navEl = document.getElementById('nav-' + tabId);
             if (navEl) navEl.classList.add('active');
+            
             if (tabId === 'leaderboard') { loadLeaderboard(); completeDaily('daily_leaderboard'); }
             if (tabId === 'tasks' || tabId === 'home') loadUserData();
+            if (tabId === 'market') loadMarket();
             if (tabId === 'nfts') { renderInventory(); completeDaily('daily_nfts'); }
             if (tabId === 'shop') { renderShopNFTs(); completeDaily('daily_shop'); }
             if (tabId === 'home') completeDaily('daily_login');
+            
             tg.HapticFeedback.impactOccurred('light');
         }
 
@@ -871,8 +1011,10 @@
                 const data = await r.json();
                 currentSNC = data.balance;
                 ownedNFTs = data.inventory || [];
+                listedNFTs = data.listed_nfts || [];
                 lastTasks = data.tasks || [];
                 lastDailyTasks = data.daily_tasks || [];
+                
                 animateBalance(data.balance);
                 renderTasks();
                 renderDailyTasks();
@@ -891,6 +1033,139 @@
             } catch (e) {}
         }
 
+        async function loadMarket() {
+            const grid = document.getElementById('market-grid');
+            grid.innerHTML = '<div class="empty-market"><span class="empty-icon">🏪</span><p class="loading-dots">Загрузка лотов</p></div>';
+            try {
+                const r = await fetch(`${SERVER_URL}/api/market`, { headers: { 'Accept': 'application/json' } });
+                if (!r.ok) throw new Error();
+                const listings = await r.json();
+                if (!listings.length) {
+                    grid.innerHTML = '<div class="empty-market"><span class="empty-icon">🏪</span><p>Лотов пока нет</p></div>';
+                    return;
+                }
+                grid.innerHTML = listings.map(l => {
+                    const n = NFT_DATA[l.nft_id] || { emoji: '❄️', title: l.nft_id, rarity: 'common' };
+                    const isMine = l.seller === username;
+                    return `<div class="listing-card ${isMine ? 'mine' : ''}">
+                        <div class="listing-nft-area">
+                            <span class="listing-nft-icon">${n.emoji}</span>
+                            <div class="listing-nft-name">${n.title}</div>
+                            <span class="rarity-badge r-${n.rarity}">${RARITY_LABEL[n.rarity]}</span>
+                        </div>
+                        <div class="listing-footer">
+                            <div class="listing-seller">@${l.seller}${isMine ? ' · Мой лот' : ''}</div>
+                            <div class="listing-price">❄️ ${l.price.toLocaleString()}</div>
+                            ${isMine
+                                ? `<button class="btn-cancel" onclick="cancelListing(${l.id})">Снять лот</button>`
+                                : `<button class="btn-buy" onclick="buyListing(${l.id}, '${n.title}', ${l.price})">Купить</button>`
+                            }
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                grid.innerHTML = '<div class="empty-market"><span class="empty-icon">⚠️</span><p>Ошибка загрузки</p></div>';
+            }
+        }
+
+        async function buyListing(id, title, price) {
+            if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
+            tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
+                if (!ok) return;
+                tg.HapticFeedback.impactOccurred('heavy');
+                try {
+                    const r = await fetch(`${SERVER_URL}/api/market/buy/${id}/${username}`, { method: 'POST' });
+                    if (r.ok) {
+                        const data = await r.json();
+                        tg.HapticFeedback.notificationOccurred('success');
+                        showToast(`✦ ${title} теперь твой!`, 'success');
+                        currentSNC = data.balance;
+                        animateBalance(data.balance);
+                        loadMarket();
+                        loadUserData();
+                    } else {
+                        const e = await r.json();
+                        showToast(e.detail || 'Ошибка покупки', 'error');
+                    }
+                } catch (e) { showToast('Ошибка подключения', 'error'); }
+            });
+        }
+
+        async function cancelListing(id) {
+            tg.showConfirm('Снять лот? Артефакт вернётся в инвентарь.', async (ok) => {
+                if (!ok) return;
+                try {
+                    const r = await fetch(`${SERVER_URL}/api/market/cancel/${id}/${username}`, { method: 'POST' });
+                    if (r.ok) {
+                        showToast('Лот снят', 'success');
+                        loadMarket();
+                        loadUserData();
+                    } else {
+                        const e = await r.json();
+                        showToast(e.detail || 'Ошибка', 'error');
+                    }
+                } catch (e) { showToast('Ошибка подключения', 'error'); }
+            });
+        }
+
+        function openListSheet() {
+            const available = ownedNFTs.filter(id => !listedNFTs.includes(id));
+            if (!available.length) {
+                showToast('Нет доступных артефактов для продажи', 'error');
+                return;
+            }
+            selectedNFTId = null;
+            document.getElementById('list-price').value = '';
+            const picker = document.getElementById('nft-picker');
+            picker.innerHTML = available.map(id => {
+                const n = NFT_DATA[id] || { emoji: '❄️', title: id, price: null };
+                const baseText = n.price ? `База: ${n.price.toLocaleString()} SNC` : 'Цена: ЛЮБАЯ';
+                return `<div class="nft-pick-card" id="pick-${id}" onclick="selectNFT('${id}', ${n.price || 0})">
+                    <span class="nft-pick-icon">${n.emoji}</span>
+                    <div class="nft-pick-name">${n.title}</div>
+                    <div class="nft-pick-base">${baseText}</div>
+                </div>`;
+            }).join('');
+            document.getElementById('sheet-overlay').classList.add('open');
+            document.getElementById('list-sheet').classList.add('open');
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function selectNFT(id, basePrice) {
+            selectedNFTId = id;
+            document.querySelectorAll('.nft-pick-card').forEach(c => c.classList.remove('selected'));
+            document.getElementById('pick-' + id).classList.add('selected');
+            if (basePrice > 0) {
+                document.getElementById('list-price').value = basePrice;
+            }
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function closeSheet() {
+            document.getElementById('sheet-overlay').classList.remove('open');
+            document.getElementById('list-sheet').classList.remove('open');
+            selectedNFTId = null;
+        }
+
+        async function submitListing() {
+            if (!selectedNFTId) { showToast('Выбери артефакт', 'error'); return; }
+            const price = parseInt(document.getElementById('list-price').value);
+            if (!price || price <= 0) { showToast('Введи цену', 'error'); return; }
+            try {
+                const r = await fetch(`${SERVER_URL}/api/market/list/${username}/${selectedNFTId}/${price}`, { method: 'POST' });
+                if (r.ok) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                    showToast('✦ Лот выставлен!', 'success');
+                    closeSheet();
+                    loadMarket();
+                    loadUserData();
+                } else {
+                    const e = await r.json();
+                    showToast(e.detail || 'Ошибка', 'error');
+                }
+            } catch (e) { showToast('Ошибка подключения', 'error'); }
+        }
+
         function renderShopNFTs() {
             const grid = document.getElementById('shop-nft-grid');
             grid.innerHTML = Object.entries(NFT_DATA).map(([id, nft]) => {
@@ -898,6 +1173,7 @@
                 const stockLeft = nft.limited ? pepeStock : null;
                 const soldOut = nft.limited && stockLeft <= 0;
                 const stockPct = nft.limited ? Math.max(0, (stockLeft / nft.totalStock) * 100) : 0;
+                
                 return `<div class="nft-shop-card ${owned ? 'owned' : ''} ${nft.limited ? 'limited' : ''}">
                     <div class="nft-art" style="background:${nft.gradient}">
                         <div class="nft-art-fallback" style="filter:drop-shadow(0 0 20px ${nft.glow}80)">${nft.emoji}</div>
@@ -917,7 +1193,7 @@
                             ? `<button class="nft-buy-btn owned-btn">✓ В арсенале</button>`
                             : soldOut
                                 ? `<button class="nft-buy-btn" style="opacity:0.4;cursor:not-allowed">Распродано</button>`
-                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}', ${nft.price}, '${nft.emoji}', '${nft.title || "NFT"}')">Приобрести</button>`
+                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}', ${nft.price}, '${nft.emoji}', '${nft.title}')">Приобрести</button>`
                         }
                     </div>
                 </div>`;
@@ -933,11 +1209,14 @@
             }
             grid.innerHTML = owned.map(id => {
                 const nft = NFT_DATA[id];
-                return `<div class="my-nft-card">
+                const isListed = listedNFTs.includes(id);
+                return `<div class="my-nft-card" style="${isListed ? 'opacity:0.5; border-color: rgba(255,215,0,0.3);' : ''}">
                     <div class="my-nft-art" style="background:${nft.gradient}">
                         <div class="my-nft-art-fallback" style="filter:drop-shadow(0 0 22px ${nft.glow}90)">${nft.emoji}</div>
                         <div class="nft-art-shimmer"></div>
-                        <div class="my-nft-owned-badge">Owned</div>
+                        ${isListed 
+                            ? '<div class="my-nft-owned-badge" style="background:var(--gold);color:#000;">На рынке</div>' 
+                            : '<div class="my-nft-owned-badge">Owned</div>'}
                     </div>
                     <div class="my-nft-info">
                         <div class="my-nft-title">${nft.title}</div>
@@ -1039,36 +1318,37 @@
             }
         }
 
-       async function buyNFT(id, price, emoji, title) {
-    title = title || 'NFT';
-    emoji = emoji || '💎';
+        async function buyNFT(id, price, emoji, title) {
+            title = title || 'NFT';
+            emoji = emoji || '💎';
 
-    if (ownedNFTs.includes(id)) { showToast('Уже в арсенале', 'error'); return; }
-    if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
+            if (ownedNFTs.includes(id)) { showToast('Уже в арсенале', 'error'); return; }
+            if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
 
-    tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
-        if (!ok) return;
+            tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
+                if (!ok) return;
 
-        tg.HapticFeedback.impactOccurred('heavy');
+                tg.HapticFeedback.impactOccurred('heavy');
 
-        try {
-            const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, { method: 'POST' });
+                try {
+                    const r = await fetch(`${SERVER_URL}/api/buy_nft/${username}/${id}/${price}`, { method: 'POST' });
 
-            if (r.ok) {
-                tg.HapticFeedback.notificationOccurred('success');
-                showToast(`${emoji} ${title} в арсенале!`, 'success');
+                    if (r.ok) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                        showToast(`${emoji} ${title} в арсенале!`, 'success');
 
-                await loadUserData();
-                renderShopNFTs();
-            } else {
-                const e = await r.json();
-                showToast(e.detail || 'Ошибка', 'error');
-            }
-        } catch (e) {
-            showToast('Ошибка подключения', 'error');
+                        await loadUserData();
+                        await loadPepeStock();
+                        renderShopNFTs();
+                    } else {
+                        const e = await r.json();
+                        showToast(e.detail || 'Ошибка', 'error');
+                    }
+                } catch (e) {
+                    showToast('Ошибка подключения', 'error');
+                }
+            });
         }
-    });
-}
 
         async function sendTransfer() {
             const target = document.getElementById('target').value.trim().replace('@','');
