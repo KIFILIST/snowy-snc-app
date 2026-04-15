@@ -27,18 +27,20 @@ ADMIN_IDS = [int(x.strip()) for x in os.getenv("ADMIN_IDS", "").split(",") if x.
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:TipoParol@postgres.railway.internal:5432/railway")
 WEBAPP_URL = "https://kifilist.github.io/snowy-snc-app/SNOWYAPP/sncecapp.html"
 
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
-app = FastAPI()
-db_pool = None
+NFT_DATA = {
+    'bear':        { 'price': 5000,  'limit': None, 'exclusive': False },
+    'heart':       { 'price': 6500,  'limit': None, 'exclusive': False },
+    'icecube':     { 'price': 7500,  'limit': None, 'exclusive': False },
+    'rose':        { 'price': 7700,  'limit': None, 'exclusive': False },
+    'coin':        { 'price': 10000, 'limit': None, 'exclusive': False },
+    'penguin':     { 'price': 12500, 'limit': None, 'exclusive': False },
+    'frozenheart': { 'price': 14000, 'limit': None, 'exclusive': False },
+    'pepe':        { 'price': 20000, 'limit': 50,   'exclusive': False },
+    'kefir':       { 'price': 0,     'limit': None, 'exclusive': True  },
+}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+NFT_PRICES = {k: v['price'] for k, v in NFT_DATA.items()}
+NFT_LIMITS = {k: v['limit'] for k, v in NFT_DATA.items() if v['limit'] is not None}
 
 STATIC_QUESTS = [
     {"id": "ref_1", "title": "Первый призыв", "description": "Пригласи 1 друга по реферальной ссылке", "reward": 25, "type": "referral", "required": 1},
@@ -62,6 +64,19 @@ DAILY_POOL = [
     {"id": "daily_check_bal", "title": "Аудит счёта", "description": "Проверь баланс на главной странице", "reward": 1},
     {"id": "daily_invite", "title": "Вербовка", "description": "Пригласи кого-нибудь в бот сегодня", "reward": 10},
 ]
+
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
+app = FastAPI()
+db_pool = None
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 async def get_db():
     global db_pool
@@ -151,12 +166,10 @@ async def update_balance(username: str, amount: int):
 async def get_nft_stock(conn, nft_id: str):
     if nft_id not in NFT_LIMITS:
         return None
-
     count = await conn.fetchval(
         "SELECT COUNT(*) FROM inventory WHERE nft_id = $1 FOR UPDATE",
         nft_id
     )
-
     return NFT_LIMITS[nft_id] - count
 
 async def get_quest_progress(username: str):
@@ -236,9 +249,6 @@ def get_username(user: types.User):
     return f"user_{user.id}"
 
 def get_keyboard():
-    buttons = [
-        [KeyboardButton(text="", web_app=WebAppInfo(url=WEBAPP_URL))]
-    ]
     return ReplyKeyboardRemove()
 
 @app.get("/api/user/{username}")
@@ -511,8 +521,9 @@ async def api_transfer(from_user: str, to_user: str, amount: int):
 
 @app.post("/api/buy_nft/{username}/{nft_id}/{price}")
 async def api_buy_nft(username: str, nft_id: str, price: int):
-    if nft_id.lower() == "kefir":
-        raise HTTPException(status_code=403, detail="This artifact cannot be purchased from the store")
+    nft_info = NFT_DATA.get(nft_id.lower())
+    if not nft_info or nft_info.get('exclusive'):
+        raise HTTPException(status_code=403, detail="Этот артефакт нельзя приобрести в обычном маркете")
 
     real_price = NFT_PRICES.get(nft_id)
     if not real_price or real_price != price:
@@ -557,6 +568,9 @@ async def api_buy_nft(username: str, nft_id: str, price: int):
 
 @app.post("/api/buy_nft_multi/{username}/{nft_id}/{price}/{count}")
 async def api_buy_nft_multi(username: str, nft_id: str, price: int, count: int):
+    nft_info = NFT_DATA.get(nft_id.lower())
+    if not nft_info or nft_info.get('exclusive'):
+        raise HTTPException(status_code=403)
 
     if count <= 0:
         raise HTTPException(status_code=400)
@@ -674,30 +688,20 @@ async def cmd_start(message: types.Message):
                 except Exception:
                     pass
 
-    if message.from_user.id in ADMIN_IDS:
-        msg = (
-            "👑 *SNC ELITE ADMINISTRATION*\n\n"
-            "Ваш статус подтвержден.\n"
-            "Управление балансом:\n"
-            "• ЛС: `@username +100` или `@username -50`\n"
-            "---------------------------------\n\n"
-            f"👋 Приветствуем, *{username}*!\n\n"
-            f"Текущие активы: *{await check_user(username)}* SNC ❄️\n\n"
-            f"🔗 Ваша реферальная ссылка:\n`https://t.me/{(await bot.get_me()).username}?start=ref_{username}`\n"
-            f"За каждого приглашённого — *300 SNC*"
-        )
-        await message.answer(msg, parse_mode="Markdown", reply_markup=get_keyboard())
-    else:
-        balance = await check_user(username)
-        ref_link = f"https://t.me/{(await bot.get_me()).username}?start=ref_{username}"
-        msg = (
-            f"👋 Приветствуем, *{username}*!\n\n"
-            f"Текущие активы: *{balance}* SNC ❄️\n\n"
-            f"🔗 Ваша реферальная ссылка:\n`{ref_link}`\n"
-            f"За каждого приглашённого — *300 SNC*"
-        )
-        await message.answer(msg, parse_mode="Markdown", reply_markup=get_keyboard())
+    balance = await check_user(username)
+    ref_link = f"https://t.me/{(await bot.get_me()).username}?start=ref_{username}"
+    
+    msg_start = (
+        f"👋 Приветствуем, *{username}*!\n\n"
+        f"Текущие активы: *{balance}* SNC ❄️\n\n"
+        f"🔗 Ваша реферальная ссылка:\n`{ref_link}`\n"
+        f"За каждого приглашённого — *300 SNC*"
+    )
 
+    if message.from_user.id in ADMIN_IDS:
+        msg_start = "👑 *SNC ELITE ADMINISTRATION*\nВаш статус подтвержден.\n\n" + msg_start
+
+    await message.answer(msg_start, parse_mode="Markdown", reply_markup=get_keyboard())
     await complete_daily(username, "daily_bot")
 
 @dp.message(Command("mysnc"))
@@ -730,23 +734,32 @@ async def cmd_mynfts(message: types.Message):
     pool = await get_db()
     async with pool.acquire() as conn:
         rows = await conn.fetch("SELECT nft_id FROM inventory WHERE username = $1", username.lower())
+    
     if rows:
-        nfts = ", ".join([r['nft_id'] for r in rows])
-        await message.answer(f"🖼️ Артефакты *{username}*:\n{nfts}", parse_mode="Markdown")
+        nft_list = [r['nft_id'] for r in rows]
+        nfts_str = "\n".join([f"• {nft.capitalize()}" for nft in nft_list])
+        await message.answer(f"🖼️ Артефакты *{username}*:\n\n{nfts_str}", parse_mode="Markdown")
     else:
         await message.answer(f"🖼️ Склад артефактов *{username}* пуст.", parse_mode="Markdown")
 
 @dp.message(Command("addsnc"))
 async def cmd_addsnc(message: types.Message):
-    if message.chat.type != "private" and message.from_user.id in ADMIN_IDS:
+    if message.chat.type == "private" and message.from_user.id in ADMIN_IDS:
         pattern = r"^/addsnc\s+@?(\w+)\s+([+-]?\d+)$"
         match = re.match(pattern, message.text or "")
         if match:
             target = match.group(1).lower()
             amount = int(match.group(2))
-            await check_user(target)
+            pool = await get_db()
+            async with pool.acquire() as conn:
+                exists = await conn.fetchval("SELECT 1 FROM users WHERE username = $1", target)
+                
+            if not exists:
+                 await message.answer(f"❌ Пользователь @{target} не найден в базе.")
+                 return
+
             new_bal = await update_balance(target, amount)
-            await message.answer(f"✅ Операция завершена.\nАккаунт: @{target}\nНовый баланс: {new_bal} SNC")
+            await message.answer(f"✅ Успешно.\nАккаунт: @{target}\nИзменение: {amount}\nБаланс: {new_bal} SNC")
 
 @dp.message(Command("givenft"))
 async def cmd_givenft(message: types.Message):
@@ -760,6 +773,10 @@ async def cmd_givenft(message: types.Message):
         target = match.group(1).lower()
         nft_id = match.group(2).lower()
         
+        if nft_id not in NFT_DATA:
+            await message.answer(f"❌ Артефакт '{nft_id}' не найден в реестре данных.")
+            return
+
         pool = await get_db()
         async with pool.acquire() as conn:
             exists = await conn.fetchrow("SELECT username FROM users WHERE username = $1", target)
@@ -773,62 +790,39 @@ async def cmd_givenft(message: types.Message):
                 ON CONFLICT (username, nft_id) DO NOTHING
             """, target, nft_id)
             
-        await message.answer(f"✅ Артефакт '{nft_id}' успешно выдан @{target}.")
+        await message.answer(f"✅ Артефакт '{nft_id.upper()}' успешно выдан @{target}.")
     else:
         await message.answer("⚠️ Формат: `/givenft @username nft_id`", parse_mode="Markdown")
 
 @dp.message(Command("starsrefund"))
 async def cmd_starsrefund(message: types.Message):
-    if message.from_user.id in ADMIN_IDS and message.chat.type == "private":
-        pattern = r"^/starsrefund\s+@?(\w+)\s+(\d+)$"
-        match = re.match(pattern, message.text or "")
-        if not match:
-            await message.answer(
-                "⚠️ Неверный формат.\nИспользуй: `/starsrefund @username количество`",
-                parse_mode="Markdown"
-            )
-            return
-        target_username = match.group(1).lower()
-        stars_amount = int(match.group(2))
-        pool = await get_db()
-        async with pool.acquire() as conn:
-            user_row = await conn.fetchrow("SELECT username FROM users WHERE username = $1", target_username)
-        if not user_row:
-            await message.answer(f"❌ Пользователь @{target_username} не найден в базе.")
-            return
-        await message.answer(
-            f"✅ Запрос на возврат оформлен.\n"
-            f"Аккаунт: @{target_username}\n"
-            f"Сумма: {stars_amount} ⭐\n\n"
-            f"Перейди в @BotFather → выбери бота → *Payments* → *Refund* и введи данные вручную если Telegram не принял автоматический возврат.",
-            parse_mode="Markdown"
-        )
+    if message.chat.type != "private" or message.from_user.id not in ADMIN_IDS:
         return
 
-    if message.chat.type == "private" and message.from_user.id not in ADMIN_IDS:
-        username = get_username(message.from_user)
-        admin_mentions = " ".join([f"[админу](tg://user?id={admin_id})" for admin_id in ADMIN_IDS])
-        await message.answer(
-            f"❄️ *Запрос на возврат Stars*\n\n"
-            f"Если у вас возникла проблема с покупкой SNC или вы хотите вернуть средства — "
-            f"наш администратор рассмотрит ваш запрос в течение 24 часов.\n\n"
-            f"Ваш запрос передан {admin_mentions}.\n\n"
-            f"Пожалуйста, опишите проблему в следующем сообщении.",
-            parse_mode="Markdown"
-        )
-        for admin_id in ADMIN_IDS:
-            try:
-                await bot.send_message(
-                    admin_id,
-                    f"🔔 *Запрос на возврат Stars*\n\n"
-                    f"Пользователь: @{username} (`{message.from_user.id}`)\n"
-                    f"Запросил возврат средств.\n\n"
-                    f"Чтобы оформить возврат:\n"
-                    f"`/starsrefund @{username} <количество_звёзд>`",
-                    parse_mode="Markdown"
-                )
-            except Exception:
-                pass
+    pattern = r"^/starsrefund\s+@?(\w+)\s+(\d+)$"
+    match = re.match(pattern, message.text or "")
+    if not match:
+        await message.answer("⚠️ Формат: `/starsrefund @username количество_звёзд`")
+        return
+        
+    target_username = match.group(1).lower()
+    stars_amount = int(match.group(2))
+    
+    pool = await get_db()
+    async with pool.acquire() as conn:
+        user_row = await conn.fetchrow("SELECT user_id, username FROM users WHERE username = $1", target_username)
+    
+    if not user_row:
+        await message.answer(f"❌ Пользователь @{target_username} не найден.")
+        return
+        
+    await message.answer(
+        f"⏳ *Оформление возврата*\n\n"
+        f"Пользователь: @{target_username} (ID: `{user_row['user_id']}`)\n"
+        f"Сумма возврата: {stars_amount} ⭐\n\n"
+        f"Для завершения перейдите в @BotFather -> Payments -> Refund и введите ID транзакции или воспользуйтесь ручным списанием SNC через `/sr_revoke @{target_username}`.",
+        parse_mode="Markdown"
+    )
 
 @dp.message(Command("sr_revoke"))
 async def cmd_starsrefund_revoke(message: types.Message):
@@ -837,30 +831,20 @@ async def cmd_starsrefund_revoke(message: types.Message):
     pattern = r"^/sr_revoke\s+@?(\w+)$"
     match = re.match(pattern, message.text or "")
     if not match:
-        await message.answer(
-            "⚠️ Неверный формат.\nИспользуй: `/sr_revoke @username`",
-            parse_mode="Markdown"
-        )
+        await message.answer("⚠️ Формат: `/sr_revoke @username`")
         return
+        
     target_username = match.group(1).lower()
     pool = await get_db()
+    
     async with pool.acquire() as conn:
-        purchases = await conn.fetch("""
-            SELECT quest_id FROM quest_progress
-            WHERE username = $1 AND quest_id = 'first_purchase' AND done = TRUE
-        """, target_username)
-        if not purchases:
-            await message.answer(f"❌ У @{target_username} нет записей о покупках SNC.")
-            return
         user_row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", target_username)
         if not user_row:
             await message.answer(f"❌ Пользователь @{target_username} не найден.")
             return
 
-    snc_to_remove = 0
-    async with pool.acquire() as conn:
         last_purchase = await conn.fetchrow("""
-            SELECT amount FROM transfers WHERE to_user = $1
+            SELECT amount FROM transfers WHERE to_user = $1 AND from_user = 'SYSTEM_STARS'
             ORDER BY created_at DESC LIMIT 1
         """, target_username)
 
@@ -868,20 +852,21 @@ async def cmd_starsrefund_revoke(message: types.Message):
 
     if snc_to_remove <= 0:
         await message.answer(
-            f"⚠️ Не удалось определить сумму последней покупки @{target_username}.\n"
-            f"Используй `/addsnc @{target_username} -<сумма>` вручную.",
-            parse_mode="Markdown"
+            f"⚠️ Не удалось автоматически определить сумму покупки для @{target_username}.\n"
+            f"Используйте ручное списание: `/addsnc @{target_username} -<сумма>`."
         )
         return
 
     new_balance = await update_balance(target_username, -snc_to_remove)
+    
     if new_balance < 0:
         await update_balance(target_username, snc_to_remove)
-        await message.answer(f"❌ У @{target_username} недостаточно SNC для списания {snc_to_remove}.")
+        await message.answer(f"❌ Ошибка. У @{target_username} недостаточно SNC ({user_row['balance']}) для списания {snc_to_remove}.")
         return
 
     await message.answer(
-        f"🚫 *Возврат отклонён — SNC списаны*\n\n"
+        f"🚫 *Корректировка баланса*\n\n"
+        f"Списаны SNC за отмененный возврат.\n"
         f"Аккаунт: @{target_username}\n"
         f"Списано: {snc_to_remove} SNC\n"
         f"Новый баланс: {new_balance} SNC",
@@ -907,12 +892,12 @@ async def handle_private_logic(message: types.Message):
                 new_bal = await update_balance(target, amount)
                 await message.answer(f"✅ Успешно.\n@{target}: {new_bal} SNC")
             else:
-                await message.answer(f"❌ Объект @{target} не найден в базе.")
+                await message.answer(f"❌ Объект @{target} не найден.")
             return
 
     await complete_daily(username, "daily_bot")
     current_balance = await check_user(username)
-    await message.answer(f"❄️ Ваш баланс: {current_balance} SNC", reply_markup=get_keyboard())
+    await message.answer(f"❄️ Ваш текущий баланс: *{current_balance}* SNC", parse_mode="Markdown", reply_markup=get_keyboard())
 
 @dp.pre_checkout_query()
 async def process_pre_checkout(query: PreCheckoutQuery):
@@ -923,33 +908,47 @@ async def success_payment_handler(message: types.Message):
     pay_data = json.loads(message.successful_payment.invoice_payload)
     target_user = pay_data['user']
     add_amount = pay_data['amount']
+    
     new_total = await update_balance(target_user, add_amount)
+    
     pool = await get_db()
     async with pool.acquire() as conn:
+        await conn.execute("""
+            INSERT INTO transfers (from_user, to_user, amount)
+            VALUES ('SYSTEM_STARS', $1, $2)
+        """, target_user.lower(), add_amount)
+        
         await conn.execute("""
             INSERT INTO quest_progress (username, quest_id, progress, done, claimed)
             VALUES ($1, 'first_purchase', 1, TRUE, FALSE)
             ON CONFLICT (username, quest_id) DO NOTHING
         """, target_user.lower())
+        
     await message.answer(
-        f"✅ Платеж подтвержден!\n"
-        f"Зачислено: {add_amount} SNC\n"
-        f"Текущий баланс: {new_total} SNC"
+        f"🎉 *Успешное пополнение!*\n\n"
+        f"Зачислено: +{add_amount} SNC\n"
+        f"Ваш баланс: *{new_total}* SNC ❄️",
+        parse_mode="Markdown"
     )
 
 async def run_polling():
     while True:
         try:
             await bot.delete_webhook(drop_pending_updates=True)
+            print("Бот запущен (polling)...")
             await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-        except Exception:
+        except Exception as e:
+            print(f"Ошибка polling: {e}")
             await asyncio.sleep(5)
 
 async def start_services():
     await init_db()
+    
     app_port = int(os.getenv("PORT", 8080))
     api_config = uvicorn.Config(app, host="0.0.0.0", port=app_port, log_level="info")
     api_server = uvicorn.Server(api_config)
+    
+    print(f"Запуск API сервера на порту {app_port}...")
     await asyncio.gather(
         run_polling(),
         api_server.serve()
@@ -959,4 +958,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(start_services())
     except (KeyboardInterrupt, SystemExit):
-        pass
+        print("Сервисы остановлены.")
