@@ -148,6 +148,17 @@ async def update_balance(username: str, amount: int):
             return row['balance']
         return 0
 
+async def get_nft_stock(conn, nft_id: str):
+    if nft_id not in NFT_LIMITS:
+        return None
+
+    count = await conn.fetchval(
+        "SELECT COUNT(*) FROM inventory WHERE nft_id = $1 FOR UPDATE",
+        nft_id
+    )
+
+    return NFT_LIMITS[nft_id] - count
+
 async def get_quest_progress(username: str):
     pool = await get_db()
     async with pool.acquire() as conn:
@@ -502,25 +513,102 @@ async def api_transfer(from_user: str, to_user: str, amount: int):
 async def api_buy_nft(username: str, nft_id: str, price: int):
     if nft_id.lower() == "kefir":
         raise HTTPException(status_code=403, detail="This artifact cannot be purchased from the store")
+
+    real_price = NFT_PRICES.get(nft_id)
+    if not real_price or real_price != price:
+        raise HTTPException(status_code=400, detail="Price mismatch")
+
     try:
         pool = await get_db()
         async with pool.acquire() as conn:
-            user_row = await conn.fetchrow("SELECT balance FROM users WHERE username = $1", username.lower())
-            if not user_row or user_row['balance'] < price:
-                raise HTTPException(status_code=400, detail="Insufficient SNC balance")
             async with conn.transaction():
-                await conn.execute("UPDATE users SET balance = balance - $1 WHERE username = $2", price, username.lower())
+
+                user_row = await conn.fetchrow(
+                    "SELECT balance FROM users WHERE username = $1 FOR UPDATE",
+                    username.lower()
+                )
+
+                if not user_row or user_row['balance'] < price:
+                    raise HTTPException(status_code=400, detail="Insufficient SNC balance")
+
+                if nft_id in NFT_LIMITS:
+                    stock = await get_nft_stock(conn, nft_id)
+                    if stock <= 0:
+                        raise HTTPException(status_code=400, detail="Sold out")
+
+                await conn.execute(
+                    "UPDATE users SET balance = balance - $1 WHERE username = $2",
+                    price, username.lower()
+                )
+
                 await conn.execute("""
                     INSERT INTO inventory (username, nft_id)
                     VALUES ($1, $2)
                     ON CONFLICT (username, nft_id) DO NOTHING
                 """, username.lower(), nft_id)
+
         await update_quest_progress(username, 'nft', 1)
         return {"status": "success", "nft_id": nft_id}
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/buy_nft_multi/{username}/{nft_id}/{price}/{count}")
+async def api_buy_nft_multi(username: str, nft_id: str, price: int, count: int):
+
+    if count <= 0:
+        raise HTTPException(status_code=400)
+
+    real_price = NFT_PRICES.get(nft_id)
+    if not real_price or real_price != price:
+        raise HTTPException(status_code=400)
+
+    total_price = price * count
+    pool = await get_db()
+
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+
+            user_row = await conn.fetchrow(
+                "SELECT balance FROM users WHERE username = $1 FOR UPDATE",
+                username.lower()
+            )
+
+            if not user_row or user_row['balance'] < total_price:
+                raise HTTPException(status_code=400)
+
+            if nft_id in NFT_LIMITS:
+                stock = await get_nft_stock(conn, nft_id)
+                if stock < count:
+                    raise HTTPException(status_code=400)
+
+            await conn.execute(
+                "UPDATE users SET balance = balance - $1 WHERE username = $2",
+                total_price, username.lower()
+            )
+
+            for _ in range(count):
+                await conn.execute("""
+                    INSERT INTO inventory (username, nft_id)
+                    VALUES ($1, $2)
+                    ON CONFLICT DO NOTHING
+                """, username.lower(), nft_id)
+
+    await update_quest_progress(username, 'nft', count)
+    return {"status": "success"}
+
+@app.get("/api/nft_stock/{nft_id}")
+async def api_nft_stock(nft_id: str):
+    pool = await get_db()
+    async with pool.acquire() as conn:
+        stock = await get_nft_stock(conn, nft_id)
+
+    if stock is None:
+        raise HTTPException(status_code=404)
+
+    return {"remaining": stock}
 
 @app.get("/api/leaderboard")
 async def api_get_leaderboard():
@@ -742,15 +830,15 @@ async def cmd_starsrefund(message: types.Message):
             except Exception:
                 pass
 
-@dp.message(Command("starsrefund_revoke"))
+@dp.message(Command("sr_revoke"))
 async def cmd_starsrefund_revoke(message: types.Message):
     if message.from_user.id not in ADMIN_IDS or message.chat.type != "private":
         return
-    pattern = r"^/starsrefund_revoke\s+@?(\w+)$"
+    pattern = r"^/sr_revoke\s+@?(\w+)$"
     match = re.match(pattern, message.text or "")
     if not match:
         await message.answer(
-            "⚠️ Неверный формат.\nИспользуй: `/starsrefund_revoke @username`",
+            "⚠️ Неверный формат.\nИспользуй: `/sr_revoke @username`",
             parse_mode="Markdown"
         )
         return

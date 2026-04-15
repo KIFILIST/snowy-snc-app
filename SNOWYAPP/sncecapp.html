@@ -758,6 +758,19 @@
         @keyframes dotsAnim {
             0%{content:''} 33%{content:'.'} 66%{content:'..'} 100%{content:'...'}
         }
+
+        @keyframes snowBurst {
+            0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) translateX(var(--drift,0px)) rotate(720deg); opacity: 0; }
+        }
+
+        .qty-row { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 20px 0; }
+        .qty-btn { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border-active); background: rgba(0,229,255,0.1); color: var(--primary); font-size: 22px; font-family: 'Syne', sans-serif; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .qty-btn:active { transform: scale(0.9); background: rgba(0,229,255,0.2); }
+        .qty-val { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; min-width: 60px; text-align: center; color: var(--text); }
+        .qty-max-hint { text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+        .qty-total { text-align: center; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--primary); margin: 8px 0 16px; }
+        .nft-img { display: block; object-fit: contain; background: transparent; image-rendering: auto; }
     </style>
 </head>
 <body>
@@ -776,6 +789,23 @@
                 <input type="number" id="list-price" placeholder="Введи цену">
             </div>
             <button class="btn-primary" onclick="submitListing()" style="margin-top:4px;">Выставить на продажу →</button>
+        </div>
+    </div>
+
+    <div class="sheet-overlay" id="qty-overlay" onclick="closeQtySheet()"></div>
+    <div class="sheet" id="qty-sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title" id="qty-sheet-title">Сколько купить?</div>
+        <div style="padding:0 20px;">
+            <div id="qty-nft-preview" style="text-align:center;margin-bottom:8px;"></div>
+            <div class="qty-max-hint" id="qty-max-hint"></div>
+            <div class="qty-row">
+                <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                <div class="qty-val" id="qty-val">1</div>
+                <button class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+            <div class="qty-total" id="qty-total"></div>
+            <button class="btn-primary" onclick="submitQtyBuy()">Купить →</button>
         </div>
     </div>
 
@@ -996,6 +1026,83 @@
             requestAnimationFrame(step);
         }
 
+        function getNFTImg(id, size) {
+            const nft = NFT_DATA[id];
+            const emoji = nft ? nft.emoji : '❓';
+            const url = `https://kifilist.github.io/snowy-snc-app/SNOWYAPP/NFTIcons/${id}.png`;
+            const fs = Math.round(size * 1.1);
+            return `<img src="${url}" width="${size}" height="${size}" data-emoji="${emoji}" data-size="${fs}" class="nft-img" onerror="var s=document.createElement('span');s.textContent=this.dataset.emoji;s.style.cssText='font-size:'+this.dataset.size+'px;display:block;text-align:center;line-height:1;filter:drop-shadow(0 6px 18px rgba(0,0,0,0.5));animation:floatNFT 3.5s ease-in-out infinite;';this.replaceWith(s);" alt="${nft ? nft.title : id}">`;
+        }
+
+        function burstSnowflakes() {
+            const c = document.createElement('div');
+            c.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;';
+            document.body.appendChild(c);
+            for (let i = 0; i < 50; i++) {
+                const f = document.createElement('div');
+                const x = 5 + Math.random() * 90;
+                const sz = 10 + Math.random() * 16;
+                const dur = 1.4 + Math.random() * 1.4;
+                const delay = Math.random() * 0.5;
+                const drift = (Math.random() - 0.5) * 240;
+                f.textContent = '❄';
+                f.style.cssText = `position:absolute;top:-24px;left:${x}%;font-size:${sz}px;color:rgba(180,235,255,${0.6+Math.random()*0.4});animation:snowBurst ${dur}s ${delay}s ease-in forwards;--drift:${drift}px;`;
+                c.appendChild(f);
+            }
+            setTimeout(() => c.remove(), 3200);
+        }
+
+        let qtyNFTId = null, qtyPrice = 0, qtyMax = 1, qtyCount = 1;
+
+        function openQtySheet(id, price, emoji, title) {
+            qtyNFTId = id; qtyPrice = price; qtyMax = pepeStock; qtyCount = 1;
+            document.getElementById('qty-sheet-title').textContent = title;
+            document.getElementById('qty-nft-preview').innerHTML = getNFTImg(id, 72);
+            document.getElementById('qty-max-hint').textContent = `Осталось в наличии: ${pepeStock}`;
+            document.getElementById('qty-val').textContent = '1';
+            document.getElementById('qty-total').textContent = `Итого: ${price.toLocaleString()} SNC`;
+            document.getElementById('qty-overlay').classList.add('open');
+            document.getElementById('qty-sheet').classList.add('open');
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function closeQtySheet() {
+            document.getElementById('qty-overlay').classList.remove('open');
+            document.getElementById('qty-sheet').classList.remove('open');
+        }
+
+        function changeQty(delta) {
+            qtyCount = Math.max(1, Math.min(qtyMax, qtyCount + delta));
+            document.getElementById('qty-val').textContent = qtyCount;
+            document.getElementById('qty-total').textContent = `Итого: ${(qtyPrice * qtyCount).toLocaleString()} SNC`;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        async function submitQtyBuy() {
+            const total = qtyPrice * qtyCount;
+            if (currentSNC < total) { showToast('Недостаточно SNC', 'error'); return; }
+            const nft = NFT_DATA[qtyNFTId];
+            const title = nft ? nft.title : qtyNFTId;
+            closeQtySheet();
+            tg.showConfirm(`Купить ${qtyCount}x ${title} за ${total.toLocaleString()} SNC?`, async (ok) => {
+                if (!ok) return;
+                tg.HapticFeedback.impactOccurred('heavy');
+                try {
+                    const r = await fetch(`${SERVER_URL}/api/buy_nft_multi/${username}/${qtyNFTId}/${qtyPrice}/${qtyCount}`, { method: 'POST' });
+                    if (r.ok) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                        showToast(`${nft ? nft.emoji : '❄️'} ${qtyCount}x ${title} в арсенале!`, 'success');
+                        await loadUserData();
+                        await loadPepeStock();
+                        renderShopNFTs();
+                    } else {
+                        const e = await r.json();
+                        showToast(e.detail || 'Ошибка', 'error');
+                    }
+                } catch (e) { showToast('Ошибка подключения', 'error'); }
+            });
+        }
+
         function openBot() {
             tg.HapticFeedback.impactOccurred('light');
             tg.openTelegramLink('https://t.me/SnowyappBot');
@@ -1063,7 +1170,7 @@
                     const isMine = l.seller === username;
                     return `<div class="listing-card ${isMine ? 'mine' : ''}">
                         <div class="listing-nft-area">
-                            <span class="listing-nft-icon">${n.emoji}</span>
+                            <div class="listing-nft-icon" style="display:flex;align-items:center;justify-content:center;margin-bottom:10px;">${getNFTImg(l.nft_id, 44)}</div>
                             <div class="listing-nft-name">${n.title}</div>
                             <span class="rarity-badge r-${n.rarity}">${RARITY_LABEL[n.rarity]}</span>
                         </div>
@@ -1135,7 +1242,7 @@
                 const n = NFT_DATA[id] || { emoji: '❄️', title: id, price: null };
                 const baseText = n.price ? `База: ${n.price.toLocaleString()} SNC` : 'Цена: ЛЮБАЯ';
                 return `<div class="nft-pick-card" id="pick-${id}" onclick="selectNFT('${id}', ${n.price || 0})">
-                    <span class="nft-pick-icon">${n.emoji}</span>
+                    <div class="nft-pick-icon" style="display:flex;align-items:center;justify-content:center;margin-bottom:8px;">${getNFTImg(id, 38)}</div>
                     <div class="nft-pick-name">${n.title}</div>
                     <div class="nft-pick-base">${baseText}</div>
                 </div>`;
@@ -1193,7 +1300,7 @@
                 
                 return `<div class="nft-shop-card ${owned ? 'owned' : ''} ${nft.limited ? 'limited' : ''}">
                     <div class="nft-art" style="background:${nft.gradient}">
-                        <div class="nft-art-fallback" style="filter:drop-shadow(0 0 20px ${nft.glow}80)">${nft.emoji}</div>
+                        <div class="nft-art-fallback" style="filter:drop-shadow(0 0 20px ${nft.glow}80)">${getNFTImg(id, 62)}</div>
                         <div class="nft-art-shimmer"></div>
                         ${owned ? '<div class="nft-owned-tag">Owned</div>' : ''}
                         ${nft.limited && !owned ? '<div class="nft-limited-tag">⚡ Limited</div>' : ''}
@@ -1210,7 +1317,7 @@
                             ? `<button class="nft-buy-btn owned-btn">✓ В арсенале</button>`
                             : soldOut
                                 ? `<button class="nft-buy-btn" style="opacity:0.4;cursor:not-allowed">Распродано</button>`
-                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}', ${nft.price}, '${nft.emoji}', '${nft.title}')">Приобрести</button>`
+                                : `<button class="nft-buy-btn" onclick="buyNFT('${id}', ${nft.price}, '${nft.emoji}', '${nft.title}')">Приобрести${nft.limited ? ' (' + stockLeft + ')' : ''}</button>`
                         }
                     </div>
                 </div>`;
@@ -1229,7 +1336,7 @@
                 const isListed = listedNFTs.includes(id);
                 return `<div class="my-nft-card" style="${isListed ? 'opacity:0.5; border-color: rgba(255,215,0,0.3);' : ''}">
                     <div class="my-nft-art" style="background:${nft.gradient}">
-                        <div class="my-nft-art-fallback" style="filter:drop-shadow(0 0 22px ${nft.glow}90)">${nft.emoji}</div>
+                        <div class="my-nft-art-fallback" style="filter:drop-shadow(0 0 22px ${nft.glow}90)">${getNFTImg(id, 60)}</div>
                         <div class="nft-art-shimmer"></div>
                         ${nft.exclusive ? '<div class="nft-exclusive-tag">💎 Exclusive</div>' : ''}
                         ${isListed 
@@ -1303,6 +1410,7 @@
                     const data = await r.json();
                     tg.HapticFeedback.notificationOccurred('success');
                     showToast(`✦ Получено +${data.reward} SNC!`, 'success');
+                    burstSnowflakes();
                     loadUserData();
                 } else {
                     const err = await r.json();
@@ -1339,9 +1447,16 @@
         async function buyNFT(id, price, emoji, title) {
             title = title || 'NFT';
             emoji = emoji || '💎';
+            const nft = NFT_DATA[id];
 
-            if (ownedNFTs.includes(id)) { showToast('Уже в арсенале', 'error'); return; }
+            if (ownedNFTs.includes(id) && !nft?.limited) { showToast('Уже в арсенале', 'error'); return; }
             if (currentSNC < price) { showToast('Недостаточно SNC', 'error'); return; }
+
+            if (nft?.limited) {
+                if (pepeStock <= 0) { showToast('Распродано', 'error'); return; }
+                openQtySheet(id, price, emoji, title);
+                return;
+            }
 
             tg.showConfirm(`Купить ${title} за ${price.toLocaleString()} SNC?`, async (ok) => {
                 if (!ok) return;
