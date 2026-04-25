@@ -37,6 +37,8 @@ NFT_DATA = {
     'frozenheart': { 'price': 14000, 'limit': None, 'exclusive': False },
     'pepe':        { 'price': 20000, 'limit': 50,   'exclusive': False },
     'kefir':       { 'price': 0,     'limit': None, 'exclusive': True  },
+    'gazan':       { 'price': 0,     'limit': None, 'exclusive': True },
+    'akino':       { 'price': 0,     'limit': None, 'exclusive': True },
 }
 
 NFT_PRICES = {k: v['price'] for k, v in NFT_DATA.items()}
